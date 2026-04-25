@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Prediksi ML{% endblock %}
+{% block page_title %}<span>Prediksi ML</span> — Decision Tree Classifier{% endblock %}
+
+{% block content %}
+
+<!-- Info Model -->
+<div class="row g-3 mb-4">
+    <div class="col-md-8">
+        <div class="card h-100">
+            <div class="card-header-custom mb-3">
+                <div class="card-title-custom">
+                    <i class="bi bi-cpu-fill"></i> Informasi Model Machine Learning
+                </div>
+            </div>
+            <div class="px-4 pb-4">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div style="background:#F8FAFC;border-radius:8px;padding:14px">
+                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Algoritma</div>
+                            <div style="font-size:15px;font-weight:700;color:var(--indosat-dark);margin-top:4px">Decision Tree (CART)</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div style="background:#F8FAFC;border-radius:8px;padding:14px">
+                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Kriteria Split</div>
+                            <div style="font-size:15px;font-weight:700;color:var(--indosat-dark);margin-top:4px">Gini Impurity</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div style="background:#F8FAFC;border-radius:8px;padding:14px">
+                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Fitur Input</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--indosat-dark);margin-top:4px">MRC · SLA · Durasi</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div style="background:#F8FAFC;border-radius:8px;padding:14px">
+                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Output</div>
+                            <div style="font-size:13px;margin-top:4px">
+                                <span class="badge-layak me-1">Layak</span>
+                                <span class="badge-tidak">Tidak Layak</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert-custom alert-info-custom mt-3">
+                    <i class="bi bi-lightbulb-fill"></i>
+                    <div>
+                        Label <strong>Layak/Tidak Layak</strong> ditentukan berdasarkan skor SAW —
+                        project dengan skor ≥ median = <strong>Layak</strong>.
+                        Model dilatih ulang setiap kali prediksi dijalankan menggunakan data terkini.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header-custom mb-3">
+                <div class="card-title-custom">
+                    <i class="bi bi-play-circle-fill"></i> Jalankan Prediksi
+                </div>
+            </div>
+            <div class="px-4 pb-4 d-flex flex-column gap-3">
+                <p style="font-size:13px;color:#6B7280;line-height:1.6">
+                    Klik tombol di bawah untuk melatih model dan mendapatkan prediksi
+                    kelayakan perpanjangan untuk semua project yang tersimpan.
+                </p>
+                <button class="btn-primary-custom justify-content-center py-3" onclick="jalankanPrediksi()" id="btn-prediksi">
+                    <i class="bi bi-cpu"></i> Jalankan Prediksi ML
+                </button>
+                <div id="prediksi-status" style="font-size:12px;color:#9CA3AF;text-align:center"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading -->
+<div id="loading-ml" style="display:none" class="text-center py-5">
+    <div class="spinner-custom mx-auto mb-3" style="width:40px;height:40px;border-width:4px"></div>
+    <p class="fw-semibold">Melatih model & menjalankan prediksi...</p>
+    <small class="text-muted">Decision Tree sedang belajar dari data Anda</small>
+</div>
+
+<!-- Hasil Prediksi -->
+<div id="hasil-ml" style="display:none">
+
+    <!-- Stat ringkasan -->
+    <div class="row g-3 mb-4" id="ml-stats"></div>
+
+    <!-- Feature Importance -->
+    <div class="card mb-4">
+        <div class="card-header-custom mb-3">
+            <div class="card-title-custom">
+                <i class="bi bi-bar-chart-fill"></i> Feature Importance
+            </div>
+            <div id="model-detail" style="font-size:12px;color:#6B7280"></div>
+        </div>
+        <div class="px-4 pb-4" id="feature-importance-container"></div>
+    </div>
+
+    <!-- Tabel hasil -->
+    <div class="card">
+        <div class="card-header-custom mb-3">
+            <div class="card-title-custom">
+                <i class="bi bi-list-ol"></i> Hasil Prediksi Per Project
+            </div>
+        </div>
+        <div class="px-4 pb-4" id="prediksi-table-container"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function jalankanPrediksi() {
+    document.getElementById('loading-ml').style.display = 'block';
+    document.getElementById('hasil-ml').style.display = 'none';
+    document.getElementById('btn-prediksi').disabled = true;
+    document.getElementById('prediksi-status').textContent = 'Sedang memproses...';
+
+    try {
+        const res  = await fetch('/ml/prediksi', { method: 'POST' });
+
+        // Cek apakah response adalah JSON
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server mengembalikan response tidak valid. Cek terminal Flask untuk detail error.');
+        }
+
+        const json = await res.json();
+
+        document.getElementById('loading-ml').style.display = 'none';
+
+        if (!json.success) {
+            document.getElementById('prediksi-status').innerHTML =
+                `<span style="color:#DC2626"><i class="bi bi-x-circle-fill me-1"></i>${json.message}</span>`;
+            return;
+        }
+
+        renderHasilML(json.hasil, json.model_info);
+        document.getElementById('hasil-ml').style.display = 'block';
+        document.getElementById('prediksi-status').innerHTML =
+            `<span style="color:#16A34A"><i class="bi bi-check-circle-fill me-1"></i>Prediksi selesai</span>`;
+
+    } catch(e) {
+        document.getElementById('loading-ml').style.display = 'none';
+        document.getElementById('prediksi-status').innerHTML =
+            `<span style="color:#DC2626">Error: ${e.message}</span>`;
+    } finally {
+        document.getElementById('btn-prediksi').disabled = false;
+    }
+}
+
+function renderHasilML(hasil, info) {
+    const layak     = hasil.filter(h => h.prediksi === 'Layak').length;
+    const tidakLayak = hasil.length - layak;
+
+    // Stats
+    document.getElementById('ml-stats').innerHTML = `
+        <div class="col-4">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="bi bi-diagram-3"></i></div>
+                <div>
+                    <div class="stat-value">${info.akurasi_training}%</div>
+                    <div class="stat-label">Akurasi Training</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
+                <div>
+                    <div class="stat-value">${layak}</div>
+                    <div class="stat-label">Prediksi Layak</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-4">
+            <div class="stat-card">
+                <div class="stat-icon red"><i class="bi bi-x-circle-fill"></i></div>
+                <div>
+                    <div class="stat-value">${tidakLayak}</div>
+                    <div class="stat-label">Prediksi Tidak Layak</div>
+                </div>
+            </div>
+        </div>`;
+
+    // Model detail
+    document.getElementById('model-detail').textContent =
+        `Kedalaman: ${info.max_depth} | Nodes: ${info.jumlah_node} | Leaves: ${info.jumlah_leaf}`;
+
+    // Feature importance
+    const fi = info.feature_importance;
+    const fiHtml = Object.entries(fi).map(([name, val]) => `
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <div style="width:160px;font-size:13px;font-weight:600;color:#374151">${name}</div>
+            <div style="flex:1">
+                <div class="progress-bar-custom">
+                    <div class="progress-fill" style="width:${(val*100).toFixed(1)}%"></div>
+                </div>
+            </div>
+            <div class="mono fw-bold" style="width:60px;text-align:right;color:var(--indosat-red)">
+                ${(val*100).toFixed(1)}%
+            </div>
+        </div>`).join('');
+
+    document.getElementById('feature-importance-container').innerHTML = fiHtml;
+
+    // Prediksi table
+    const rows = hasil.map((h, i) => `
+        <tr>
+            <td>${i+1}</td>
+            <td class="fw-semibold">${h.nama_project}</td>
+            <td class="mono">${parseFloat(h.mrc).toLocaleString('id-ID')}</td>
+            <td class="mono">${parseFloat(h.sla).toFixed(2)}%</td>
+            <td class="mono">${parseFloat(h.durasi).toFixed(1)} thn</td>
+            <td>
+                ${h.prediksi === 'Layak' ?
+                    '<span class="badge-layak"><i class="bi bi-check-circle-fill me-1"></i>Layak</span>' :
+                    '<span class="badge-tidak"><i class="bi bi-x-circle-fill me-1"></i>Tidak Layak</span>'}
+            </td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress-bar-custom" style="width:80px">
+                        <div class="progress-fill" style="width:${(h.probabilitas*100).toFixed(0)}%;
+                            background:${h.prediksi==='Layak'?'#16A34A':'#DC2626'}"></div>
+                    </div>
+                    <span class="mono" style="font-size:12px;font-weight:600">
+                        ${(h.probabilitas*100).toFixed(1)}%
+                    </span>
+                </div>
+            </td>
+            <td>
+                <span style="font-size:12px;color:#9CA3AF">
+                    ${h.label_asli === 'Layak' ?
+                        '<span class="badge-layak" style="font-size:11px">Layak</span>' :
+                        '<span class="badge-tidak" style="font-size:11px">Tidak Layak</span>'}
+                </span>
+            </td>
+        </tr>`).join('');
+
+    document.getElementById('prediksi-table-container').innerHTML = `
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>#</th><th>Nama Project</th>
+                    <th>MRC</th><th>SLA</th><th>Durasi</th>
+                    <th>Prediksi</th><th>Probabilitas</th><th>Label Aktual</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <div class="alert-custom alert-warn-custom mt-3">
+            <i class="bi bi-info-circle-fill"></i>
+            <div><strong>Label Aktual</strong> adalah label yang digunakan untuk melatih model,
+            dihitung berdasarkan skor SAW (≥ median = Layak). Bukan keputusan final perusahaan.</div>
+        </div>`;
+}
+</script>
+{% endblock %}

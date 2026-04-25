@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}<span>Dashboard</span> — Overview Sistem{% endblock %}
+
+{% block content %}
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon red"><i class="bi bi-folder2-open"></i></div>
+            <div>
+                <div class="stat-value" id="stat-total">–</div>
+                <div class="stat-label">Total Project</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
+            <div>
+                <div class="stat-value" id="stat-layak">–</div>
+                <div class="stat-label">Prediksi Layak</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="bi bi-calculator-fill"></i></div>
+            <div>
+                <div class="stat-value">4</div>
+                <div class="stat-label">Metode SPK</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon yellow"><i class="bi bi-cpu-fill"></i></div>
+            <div>
+                <div class="stat-value">DT</div>
+                <div class="stat-label">Decision Tree ML</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Kriteria + Quick Actions -->
+<div class="row g-3 mb-4">
+    <!-- Kriteria -->
+    <div class="col-md-7">
+        <div class="card h-100">
+            <div class="card-header-custom mb-3">
+                <div class="card-title-custom">
+                    <i class="bi bi-sliders"></i> Kriteria & Bobot (Fixed — AHP)
+                </div>
+            </div>
+            <div class="px-4 pb-4">
+                <table class="table-custom w-100">
+                    <thead>
+                        <tr>
+                            <th>Kriteria</th>
+                            <th>Keterangan</th>
+                            <th>Tipe</th>
+                            <th>Bobot</th>
+                            <th>Proporsi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="mono fw-bold">MRC</span></td>
+                            <td>Monthly Recurring Charge</td>
+                            <td><span class="badge-layak">Benefit</span></td>
+                            <td class="mono fw-bold">0.633</td>
+                            <td>
+                                <div class="progress-bar-custom" style="width:120px">
+                                    <div class="progress-fill" style="width:63.3%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="mono fw-bold">SLA</span></td>
+                            <td>SLA Availability</td>
+                            <td><span class="badge-tidak">Cost</span></td>
+                            <td class="mono fw-bold">0.106</td>
+                            <td>
+                                <div class="progress-bar-custom" style="width:120px">
+                                    <div class="progress-fill" style="width:10.6%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="mono fw-bold">Durasi</span></td>
+                            <td>Contract Duration</td>
+                            <td><span class="badge-layak">Benefit</span></td>
+                            <td class="mono fw-bold">0.260</td>
+                            <td>
+                                <div class="progress-bar-custom" style="width:120px">
+                                    <div class="progress-fill" style="width:26%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="alert-custom alert-info-custom mt-3">
+                    <i class="bi bi-info-circle-fill"></i>
+                    Bobot dihitung menggunakan metode AHP dengan CR = 0.0532 (konsisten, CR &lt; 0.1)
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-md-5">
+        <div class="card h-100">
+            <div class="card-header-custom mb-3">
+                <div class="card-title-custom">
+                    <i class="bi bi-lightning-fill"></i> Quick Actions
+                </div>
+            </div>
+            <div class="px-4 pb-4 d-flex flex-column gap-2">
+                <a href="{{ url_for('data.index') }}" class="btn-primary-custom text-decoration-none justify-content-center py-3">
+                    <i class="bi bi-upload"></i> Upload Data Project (Excel)
+                </a>
+                <a href="{{ url_for('spk.index') }}" class="btn-outline-custom text-decoration-none justify-content-center py-3">
+                    <i class="bi bi-calculator"></i> Jalankan Perhitungan SPK
+                </a>
+                <a href="{{ url_for('ml.index') }}" class="btn-outline-custom text-decoration-none justify-content-center py-3">
+                    <i class="bi bi-cpu"></i> Prediksi Machine Learning
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabel project terbaru -->
+<div class="card">
+    <div class="card-header-custom mb-3">
+        <div class="card-title-custom">
+            <i class="bi bi-table"></i> Data Project Terbaru
+        </div>
+        <a href="{{ url_for('data.index') }}" class="btn-outline-custom" style="font-size:12px;padding:6px 14px">
+            Lihat Semua <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    <div class="px-4 pb-4">
+        <div id="table-container">
+            <div class="text-center py-4 text-muted">
+                <div class="spinner-custom mx-auto mb-2"></div>
+                <small>Memuat data...</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res  = await fetch('/data/list');
+        const json = await res.json();
+        const data = json.data || [];
+
+        document.getElementById('stat-total').textContent = data.length;
+
+        // Estimasi layak berdasarkan MRC > 300 atau SLA >= 98
+        const layak = data.filter(p => p.mrc > 300 || p.sla >= 98).length;
+        document.getElementById('stat-layak').textContent = layak;
+
+        const container = document.getElementById('table-container');
+
+        if (data.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox" style="font-size:40px;opacity:.3"></i>
+                    <p class="mt-2 mb-3">Belum ada data project</p>
+                    <a href="/data" class="btn-primary-custom text-decoration-none">
+                        <i class="bi bi-plus"></i> Tambah Data
+                    </a>
+                </div>`;
+            return;
+        }
+
+        const preview = data.slice(0, 8);
+        let rows = preview.map((p, i) => `
+            <tr>
+                <td>${i + 1}</td>
+                <td class="fw-semibold">${p.nama_project}</td>
+                <td class="mono">Rp ${parseFloat(p.mrc).toLocaleString('id-ID')} jt</td>
+                <td class="mono">${parseFloat(p.sla).toFixed(1)}%</td>
+                <td class="mono">${parseFloat(p.durasi).toFixed(1)} thn</td>
+                <td>
+                    ${p.mrc >= 300 ?
+                        '<span class="badge-layak"><i class="bi bi-check-circle me-1"></i>MRC Tinggi</span>' :
+                        p.mrc >= 100 ?
+                        '<span style="background:#FFF7ED;color:#C2410C;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600">MRC Sedang</span>' :
+                        '<span class="badge-tidak"><i class="bi bi-x-circle me-1"></i>MRC Rendah</span>'
+                    }
+                </td>
+            </tr>`).join('');
+
+        container.innerHTML = `
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nama Project</th>
+                        <th>MRC</th>
+                        <th>SLA</th>
+                        <th>Durasi</th>
+                        <th>Status MRC</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+            ${data.length > 8 ? `<p class="text-muted text-end mt-2" style="font-size:12px">+${data.length - 8} project lainnya — <a href="/data">Lihat semua</a></p>` : ''}`;
+
+    } catch(e) {
+        document.getElementById('table-container').innerHTML =
+            '<div class="alert-custom alert-error-custom"><i class="bi bi-exclamation-triangle"></i> Gagal memuat data project.</div>';
+    }
+});
+</script>
+{% endblock %}

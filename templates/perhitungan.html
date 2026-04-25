@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Perhitungan SPK{% endblock %}
+{% block page_title %}<span>Perhitungan SPK</span> — Pilih & Jalankan Metode{% endblock %}
+
+{% block content %}
+
+<!-- Pilih Metode -->
+<div class="card mb-4">
+    <div class="card-header-custom mb-4">
+        <div class="card-title-custom">
+            <i class="bi bi-calculator-fill"></i> Pilih Metode Perhitungan
+        </div>
+        <button class="btn-primary-custom" onclick="hitungSemua()" id="btn-semua">
+            <i class="bi bi-play-circle-fill"></i> Hitung Semua Sekaligus
+        </button>
+    </div>
+    <div class="px-4 pb-4">
+        <div class="row g-3 mb-4">
+            <!-- AHP -->
+            <div class="col-md-3">
+                <div class="method-card" onclick="selectMethod('AHP', this)">
+                    <div class="method-name">AHP</div>
+                    <div class="method-full">Analytical Hierarchy Process</div>
+                    <div class="method-desc">
+                        Menggunakan bobot kriteria dari perbandingan berpasangan.
+                        CR = 0.0532 (konsisten).
+                    </div>
+                    <div class="mt-3 d-flex gap-1 flex-wrap">
+                        <span style="background:#FFF3F5;color:var(--indosat-red);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Sub-kriteria</span>
+                        <span style="background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Skoring</span>
+                    </div>
+                </div>
+            </div>
+            <!-- SAW -->
+            <div class="col-md-3">
+                <div class="method-card" onclick="selectMethod('SAW', this)">
+                    <div class="method-name">SAW</div>
+                    <div class="method-full">Simple Additive Weighting</div>
+                    <div class="method-desc">
+                        Normalisasi nilai benefit (max) dan cost (min), lalu weighted sum.
+                    </div>
+                    <div class="mt-3 d-flex gap-1 flex-wrap">
+                        <span style="background:#EFF6FF;color:#2563EB;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Normalisasi</span>
+                        <span style="background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Sederhana</span>
+                    </div>
+                </div>
+            </div>
+            <!-- MOORA -->
+            <div class="col-md-3">
+                <div class="method-card" onclick="selectMethod('MOORA', this)">
+                    <div class="method-name">MOORA</div>
+                    <div class="method-full">Multi-Objective Optimization Ratio Analysis</div>
+                    <div class="method-desc">
+                        Normalisasi rasio akar kuadrat, Yi = benefit − cost.
+                    </div>
+                    <div class="mt-3 d-flex gap-1 flex-wrap">
+                        <span style="background:#F0FDF4;color:#16A34A;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Benefit−Cost</span>
+                        <span style="background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Rasio</span>
+                    </div>
+                </div>
+            </div>
+            <!-- WP -->
+            <div class="col-md-3">
+                <div class="method-card" onclick="selectMethod('WP', this)">
+                    <div class="method-name">WP</div>
+                    <div class="method-full">Weighted Product</div>
+                    <div class="method-desc">
+                        Si = Π(xij^wj), cost menggunakan pangkat negatif. Vi = Si/ΣSi.
+                    </div>
+                    <div class="mt-3 d-flex gap-1 flex-wrap">
+                        <span style="background:#FFFBEB;color:#D97706;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Perkalian</span>
+                        <span style="background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Pangkat</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol hitung -->
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn-primary-custom" onclick="hitungSatu()" id="btn-hitung" disabled>
+                <i class="bi bi-play-fill"></i> Hitung <span id="selected-method-label">—</span>
+            </button>
+            <span id="method-status" class="text-muted" style="font-size:13px">Pilih salah satu metode di atas</span>
+        </div>
+    </div>
+</div>
+
+<!-- Loading -->
+<div id="loading-section" style="display:none" class="text-center py-5">
+    <div class="spinner-custom mx-auto mb-3" style="width:40px;height:40px;border-width:4px"></div>
+    <p class="fw-semibold" style="color:var(--indosat-dark)">Menjalankan perhitungan...</p>
+    <small class="text-muted">Mohon tunggu sebentar</small>
+</div>
+
+<!-- Hasil Single Metode -->
+<div id="hasil-section" style="display:none">
+    <div class="card mb-4">
+        <div class="card-header-custom mb-3">
+            <div class="card-title-custom">
+                <i class="bi bi-trophy-fill" style="color:#D97706"></i>
+                Hasil Ranking — <span id="hasil-metode-label" class="mono" style="color:var(--indosat-red)"></span>
+            </div>
+            <div id="hasil-meta" style="font-size:12px;color:#6B7280"></div>
+        </div>
+        <div class="px-4 pb-4">
+            <div id="hasil-table-container"></div>
+        </div>
+    </div>
+
+    <!-- Detail Normalisasi -->
+    <div class="card">
+        <div class="card-header-custom mb-3">
+            <div class="card-title-custom">
+                <i class="bi bi-table"></i> Detail Normalisasi Nilai
+            </div>
+        </div>
+        <div class="px-4 pb-4">
+            <div id="normalisasi-table-container"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Hasil Semua Metode -->
+<div id="hasil-semua-section" style="display:none">
+    <div class="card mb-4">
+        <div class="card-header-custom mb-3">
+            <div class="card-title-custom">
+                <i class="bi bi-grid-fill"></i> Perbandingan Hasil — Semua Metode
+            </div>
+        </div>
+        <div class="px-4 pb-4" id="semua-container"></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedMethod = null;
+let allCards = [];
+
+function selectMethod(method, card) {
+    allCards.forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    allCards = [card];
+    selectedMethod = method;
+
+    document.getElementById('btn-hitung').disabled = false;
+    document.getElementById('selected-method-label').textContent = method;
+    document.getElementById('method-status').textContent = `Metode ${method} dipilih`;
+}
+
+// Track all method cards
+document.querySelectorAll('.method-card').forEach(c => allCards.push(c));
+// Reset to empty
+allCards = Array.from(document.querySelectorAll('.method-card'));
+
+async function hitungSatu() {
+    if (!selectedMethod) return;
+
+    document.getElementById('loading-section').style.display = 'block';
+    document.getElementById('hasil-section').style.display = 'none';
+    document.getElementById('hasil-semua-section').style.display = 'none';
+    document.getElementById('btn-hitung').disabled = true;
+
+    try {
+        const res  = await fetch('/spk/hitung', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ metode: selectedMethod })
+        });
+        const json = await res.json();
+
+        document.getElementById('loading-section').style.display = 'none';
+
+        if (!json.success) {
+            showAlert(json.message, 'error');
+            return;
+        }
+
+        renderHasil(json.hasil, json.metode);
+        document.getElementById('hasil-section').style.display = 'block';
+
+    } catch(e) {
+        document.getElementById('loading-section').style.display = 'none';
+        showAlert('Terjadi error saat perhitungan.', 'error');
+    } finally {
+        document.getElementById('btn-hitung').disabled = false;
+    }
+}
+
+async function hitungSemua() {
+    document.getElementById('loading-section').style.display = 'block';
+    document.getElementById('hasil-section').style.display = 'none';
+    document.getElementById('hasil-semua-section').style.display = 'none';
+    document.getElementById('btn-semua').disabled = true;
+
+    try {
+        const res  = await fetch('/spk/hitung-semua', { method: 'POST' });
+        const json = await res.json();
+
+        document.getElementById('loading-section').style.display = 'none';
+
+        if (!json.success) { showAlert(json.message, 'error'); return; }
+
+        renderSemuaHasil(json.semua_hasil);
+        document.getElementById('hasil-semua-section').style.display = 'block';
+
+    } catch(e) {
+        document.getElementById('loading-section').style.display = 'none';
+        showAlert('Error saat menghitung semua metode.', 'error');
+    } finally {
+        document.getElementById('btn-semua').disabled = false;
+    }
+}
+
+function renderHasil(hasil, metode) {
+    document.getElementById('hasil-metode-label').textContent = metode;
+    document.getElementById('hasil-meta').textContent = `${hasil.length} project diranking`;
+
+    // Ranking table
+    const rows = hasil.map(h => {
+        const rankClass = h.ranking === 1 ? 'rank-1' : h.ranking === 2 ? 'rank-2' : h.ranking === 3 ? 'rank-3' : 'rank-n';
+        return `
+        <tr>
+            <td><span class="badge-rank ${rankClass}">${h.ranking}</span></td>
+            <td class="fw-semibold">${h.nama_project}</td>
+            <td class="mono">${parseFloat(h.mrc_raw).toLocaleString('id-ID')}</td>
+            <td class="mono">${parseFloat(h.sla_raw).toFixed(2)}%</td>
+            <td class="mono">${parseFloat(h.durasi_raw).toFixed(1)} thn</td>
+            <td>
+                <span class="mono fw-bold" style="color:var(--indosat-red);font-size:15px">${parseFloat(h.skor).toFixed(6)}</span>
+                <div class="progress-bar-custom mt-1" style="width:100px">
+                    <div class="progress-fill" style="width:${Math.min(100, parseFloat(h.skor) * 100)}%"></div>
+                </div>
+            </td>
+            <td>${h.ranking <= Math.ceil(hasil.length / 2) ?
+                '<span class="badge-layak"><i class="bi bi-check-circle me-1"></i>Layak</span>' :
+                '<span class="badge-tidak"><i class="bi bi-x-circle me-1"></i>Tidak Layak</span>'}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('hasil-table-container').innerHTML = `
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Rank</th><th>Nama Project</th>
+                    <th>MRC (juta)</th><th>SLA (%)</th><th>Durasi</th>
+                    <th>Skor ${metode}</th><th>Status</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+
+    // Normalisasi table
+    const normRows = hasil.map(h => `
+        <tr>
+            <td class="fw-semibold">${h.nama_project}</td>
+            <td class="mono">${parseFloat(h.norm_mrc||0).toFixed(6)}</td>
+            <td class="mono">${parseFloat(h.norm_sla||0).toFixed(6)}</td>
+            <td class="mono">${parseFloat(h.norm_durasi||0).toFixed(6)}</td>
+        </tr>`).join('');
+
+    document.getElementById('normalisasi-table-container').innerHTML = `
+        <table class="table-custom">
+            <thead>
+                <tr><th>Nama Project</th><th>Norm. MRC</th><th>Norm. SLA</th><th>Norm. Durasi</th></tr>
+            </thead>
+            <tbody>${normRows}</tbody>
+        </table>`;
+}
+
+function renderSemuaHasil(semuaHasil) {
+    const metodes = ['AHP', 'SAW', 'MOORA', 'WP'];
+    let html = '';
+
+    metodes.forEach(m => {
+        const hasil = semuaHasil[m];
+        if (hasil?.error) {
+            html += `<div class="alert-custom alert-error-custom mb-3"><i class="bi bi-x-circle"></i> ${m}: ${hasil.error}</div>`;
+            return;
+        }
+
+        const rows = hasil.slice(0, 5).map(h => {
+            const rankClass = h.ranking === 1 ? 'rank-1' : h.ranking === 2 ? 'rank-2' : h.ranking === 3 ? 'rank-3' : 'rank-n';
+            return `
+            <tr>
+                <td><span class="badge-rank ${rankClass}">${h.ranking}</span></td>
+                <td class="fw-semibold" style="font-size:13px">${h.nama_project}</td>
+                <td class="mono" style="color:var(--indosat-red);font-weight:700">${parseFloat(h.skor).toFixed(4)}</td>
+            </tr>`;
+        }).join('');
+
+        html += `
+        <div class="mb-4">
+            <h6 class="mono fw-bold mb-2" style="color:var(--indosat-red);font-size:15px">
+                ${m} <span style="color:#6B7280;font-size:12px;font-weight:400">— ${hasil.length} project</span>
+            </h6>
+            <table class="table-custom">
+                <thead><tr><th>Rank</th><th>Nama Project</th><th>Skor</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            ${hasil.length > 5 ? `<p class="text-muted" style="font-size:12px;margin-top:4px">+${hasil.length-5} lainnya</p>` : ''}
+            <hr class="my-3" style="border-color:#F0F2F5">
+        </div>`;
+    });
+
+    document.getElementById('semua-container').innerHTML = html;
+}
+
+function showAlert(msg, type) {
+    const a = document.createElement('div');
+    a.className = `alert-custom alert-${type === 'error' ? 'error' : 'success'}-custom mb-3`;
+    a.innerHTML = `<i class="bi bi-${type==='error'?'x-circle-fill':'check-circle-fill'}"></i> ${msg}`;
+    document.querySelector('.main-content').prepend(a);
+    setTimeout(() => a.remove(), 4000);
+}
+</script>
+{% endblock %}

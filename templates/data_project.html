@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% block title %}Data Project{% endblock %}
+{% block page_title %}<span>Data Project</span> — Kelola Data Input{% endblock %}
+
+{% block extra_css %}{% endblock %}
+
+{% block content %}
+
+<!-- Upload Section -->
+<div class="card mb-4">
+    <div class="card-header-custom mb-4">
+        <div class="card-title-custom">
+            <i class="bi bi-cloud-upload-fill"></i> Upload Data Project (Excel)
+        </div>
+        <a href="/static/template_project.xlsx" class="btn-outline-custom" style="font-size:12px;padding:6px 14px" id="btn-download-template">
+            <i class="bi bi-download"></i> Download Template Excel
+        </a>
+    </div>
+    <div class="px-4 pb-4">
+        <!-- Format info -->
+        <div class="alert-custom alert-info-custom mb-3">
+            <i class="bi bi-info-circle-fill"></i>
+            <div>
+                Format kolom Excel: <strong>Nama_Project | MRC (juta Rp) | SLA (%) | Durasi (tahun)</strong>
+                &nbsp;·&nbsp; Mendukung file <strong>.xlsx</strong> dan <strong>.xls</strong>
+            </div>
+        </div>
+
+        <!-- Drop zone -->
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+            <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none">
+            <i class="bi bi-file-earmark-spreadsheet mb-3 d-block"></i>
+            <p class="fw-semibold mb-1" style="color:#374151">Klik atau drag & drop file Excel di sini</p>
+            <small class="text-muted">Format: .xlsx / .xls — Maksimal 5MB</small>
+        </div>
+
+        <!-- Preview area (hidden until upload) -->
+        <div id="preview-area" style="display:none" class="mt-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="card-title-custom">
+                    <i class="bi bi-eye-fill"></i> Preview Data
+                    <span id="preview-count" class="ms-2" style="font-size:12px;font-weight:500;color:#6B7280"></span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn-outline-custom" onclick="resetUpload()" style="font-size:12px;padding:6px 12px">
+                        <i class="bi bi-x"></i> Batal
+                    </button>
+                    <button class="btn-primary-custom" onclick="simpanData('tambah')" id="btn-simpan-tambah" style="font-size:12px;padding:6px 14px">
+                        <i class="bi bi-plus-circle"></i> Tambahkan ke Data
+                    </button>
+                    <button class="btn-primary-custom" onclick="simpanData('ganti')" id="btn-simpan-ganti"
+                        style="font-size:12px;padding:6px 14px;background:#374151">
+                        <i class="bi bi-arrow-repeat"></i> Ganti Semua Data
+                    </button>
+                </div>
+            </div>
+            <div id="preview-errors" class="mb-2"></div>
+            <div class="preview-table-wrap">
+                <table class="table-custom" id="preview-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nama Project</th>
+                            <th>MRC (juta Rp)</th>
+                            <th>SLA (%)</th>
+                            <th>Durasi (thn)</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="preview-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="upload-alert" class="mt-3"></div>
+    </div>
+</div>
+
+<!-- Data Table Section -->
+<div class="card">
+    <div class="card-header-custom mb-3">
+        <div class="card-title-custom">
+            <i class="bi bi-table"></i> Data Project Tersimpan
+            <span id="total-badge" class="ms-2" style="background:#FFF3F5;color:var(--indosat-red);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600"></span>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn-outline-custom" onclick="showTambahModal()" style="font-size:12px;padding:6px 14px">
+                <i class="bi bi-plus"></i> Tambah Manual
+            </button>
+            <button class="btn-outline-custom" onclick="hapusSemua()"
+                style="font-size:12px;padding:6px 14px;color:#DC2626;border-color:#FCA5A5">
+                <i class="bi bi-trash3"></i> Hapus Semua
+            </button>
+        </div>
+    </div>
+    <div class="px-4 pb-4">
+        <div id="main-table-container">
+            <div class="text-center py-4"><div class="spinner-custom mx-auto"></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Manual -->
+<div class="modal fade" id="modalTambah" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:14px;border:none">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold" style="color:var(--indosat-dark)">
+                    <i class="bi bi-plus-circle-fill text-danger me-2"></i>Tambah Project Manual
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="mb-3">
+                    <label class="form-label" style="font-size:13px;font-weight:600">Nama Project</label>
+                    <input type="text" id="add-nama" class="form-control" placeholder="Contoh: Project Alpha - PT Telkom">
+                </div>
+                <div class="row g-3">
+                    <div class="col-4">
+                        <label class="form-label" style="font-size:13px;font-weight:600">MRC (juta Rp)</label>
+                        <input type="number" id="add-mrc" class="form-control" placeholder="350" min="0" step="0.01">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label" style="font-size:13px;font-weight:600">SLA (%)</label>
+                        <input type="number" id="add-sla" class="form-control" placeholder="99.5" min="0" max="100" step="0.01">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label" style="font-size:13px;font-weight:600">Durasi (tahun)</label>
+                        <input type="number" id="add-durasi" class="form-control" placeholder="5" min="0" step="0.1">
+                    </div>
+                </div>
+                <div id="modal-alert" class="mt-3"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button class="btn-outline-custom" data-bs-dismiss="modal">Batal</button>
+                <button class="btn-primary-custom" onclick="tambahManual()">
+                    <i class="bi bi-plus"></i> Simpan Project
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let previewData   = [];
+let editingRow    = null;
+const modalTambah = new bootstrap.Modal(document.getElementById('modalTambah'));
+
+// ===== LOAD TABEL UTAMA =====
+async function loadTable() {
+    try {
+        const res  = await fetch('/data/list');
+        const json = await res.json();
+        const data = json.data || [];
+
+        document.getElementById('total-badge').textContent = data.length + ' project';
+
+        const cont = document.getElementById('main-table-container');
+        if (data.length === 0) {
+            cont.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox" style="font-size:48px;opacity:.25"></i>
+                    <p class="mt-2">Belum ada data project. Upload Excel atau tambah manual.</p>
+                </div>`;
+            return;
+        }
+
+        let rows = data.map(p => `
+            <tr id="row-${p.id}">
+                <td class="mono" style="color:#9CA3AF">${i + 1}</td>
+                <td class="fw-semibold editable-cell" ondblclick="editCell(this, ${p.id}, 'nama_project')">${p.nama_project}</td>
+                <td class="mono editable-cell" ondblclick="editCell(this, ${p.id}, 'mrc')">${parseFloat(p.mrc).toLocaleString('id-ID')}</td>
+                <td class="mono editable-cell" ondblclick="editCell(this, ${p.id}, 'sla')">${parseFloat(p.sla).toFixed(2)}</td>
+                <td class="mono editable-cell" ondblclick="editCell(this, ${p.id}, 'durasi')">${parseFloat(p.durasi).toFixed(1)}</td>
+                <td>
+                    <button onclick="hapusProject(${p.id})"
+                        style="background:none;border:none;color:#DC2626;cursor:pointer;font-size:16px;padding:2px 6px"
+                        title="Hapus project">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </td>
+            </tr>`).join('');
+
+        cont.innerHTML = `
+            <p style="font-size:12px;color:#9CA3AF;margin-bottom:8px">
+                <i class="bi bi-pencil"></i> Double-click pada sel untuk mengedit langsung
+            </p>
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Nama Project</th>
+                        <th>MRC (juta Rp)</th>
+                        <th>SLA (%)</th>
+                        <th>Durasi (thn)</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+    } catch(e) {
+        document.getElementById('main-table-container').innerHTML =
+            '<div class="alert-custom alert-error-custom"><i class="bi bi-exclamation-triangle"></i> Gagal memuat data.</div>';
+    }
+}
+
+// ===== UPLOAD EXCEL =====
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('file-input');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
+
+async function processFile(file) {
+    const alertEl = document.getElementById('upload-alert');
+    alertEl.innerHTML = '<div class="alert-custom alert-info-custom"><div class="spinner-custom me-2"></div> Membaca file Excel...</div>';
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res  = await fetch('/data/upload', { method: 'POST', body: formData });
+        const json = await res.json();
+
+        if (!json.success) {
+            alertEl.innerHTML = `<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> ${json.message}</div>`;
+            return;
+        }
+
+        alertEl.innerHTML = '';
+        previewData = json.preview;
+        renderPreview();
+
+        if (json.errors?.length > 0) {
+            document.getElementById('preview-errors').innerHTML =
+                `<div class="alert-custom alert-warn-custom"><i class="bi bi-exclamation-triangle-fill"></i>
+                <div><strong>${json.errors.length} baris dilewati:</strong> ${json.errors.join(' | ')}</div></div>`;
+        }
+    } catch(e) {
+        alertEl.innerHTML = '<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> Gagal membaca file.</div>';
+    }
+}
+
+function renderPreview() {
+    document.getElementById('preview-area').style.display = 'block';
+    document.getElementById('preview-count').textContent = `(${previewData.length} baris)`;
+
+    const tbody = document.getElementById('preview-tbody');
+    tbody.innerHTML = previewData.map((p, i) => `
+        <tr>
+            <td>${i + 1}</td>
+            <td contenteditable="true" oninput="previewData[${i}].nama_project=this.textContent"
+                style="outline:none;min-width:180px">${p.nama_project}</td>
+            <td contenteditable="true" oninput="previewData[${i}].mrc=parseFloat(this.textContent||0)"
+                style="outline:none" class="mono">${p.mrc}</td>
+            <td contenteditable="true" oninput="previewData[${i}].sla=parseFloat(this.textContent||0)"
+                style="outline:none" class="mono">${p.sla}</td>
+            <td contenteditable="true" oninput="previewData[${i}].durasi=parseFloat(this.textContent||0)"
+                style="outline:none" class="mono">${p.durasi}</td>
+            <td>
+                <button onclick="hapusPreviewRow(${i})"
+                    style="background:none;border:none;color:#DC2626;cursor:pointer">
+                    <i class="bi bi-trash3"></i>
+                </button>
+            </td>
+        </tr>`).join('');
+}
+
+function hapusPreviewRow(i) {
+    previewData.splice(i, 1);
+    renderPreview();
+}
+
+function resetUpload() {
+    previewData = [];
+    document.getElementById('preview-area').style.display = 'none';
+    document.getElementById('preview-errors').innerHTML = '';
+    document.getElementById('upload-alert').innerHTML = '';
+    fileInput.value = '';
+}
+
+async function simpanData(mode) {
+    const btn = document.getElementById(mode === 'tambah' ? 'btn-simpan-tambah' : 'btn-simpan-ganti');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner-custom me-2"></div> Menyimpan...';
+
+    try {
+        const res  = await fetch('/data/simpan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projects: previewData, mode })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+            document.getElementById('upload-alert').innerHTML =
+                `<div class="alert-custom alert-success-custom"><i class="bi bi-check-circle-fill"></i> ${json.message}</div>`;
+            resetUpload();
+            loadTable();
+        } else {
+            document.getElementById('upload-alert').innerHTML =
+                `<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> ${json.message}</div>`;
+        }
+    } catch(e) {
+        document.getElementById('upload-alert').innerHTML =
+            '<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> Gagal menyimpan.</div>';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = mode === 'tambah' ?
+            '<i class="bi bi-plus-circle"></i> Tambahkan ke Data' :
+            '<i class="bi bi-arrow-repeat"></i> Ganti Semua Data';
+    }
+}
+
+// ===== INLINE EDIT =====
+let editBuffer = {};
+
+function editCell(td, id, field) {
+    if (td.querySelector('input')) return;
+    const original = td.textContent.trim();
+    td.innerHTML = `<input class="inline-input" value="${original}" onblur="saveCell(this, ${id}, '${field}', '${original}')" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${original}';this.blur();}">`;
+    td.querySelector('input').focus();
+}
+
+async function saveCell(input, id, field, original) {
+    const val = input.value.trim();
+    const td  = input.parentElement;
+    td.textContent = val;
+
+    if (val === original) return;
+
+    // Baca data row saat ini
+    const row = document.getElementById(`row-${id}`);
+    const cells = row.querySelectorAll('td');
+    const payload = {
+        nama_project: cells[1].textContent.trim(),
+        mrc:          parseFloat(cells[2].textContent.replace(/\./g,'').replace(',','.')),
+        sla:          parseFloat(cells[3].textContent),
+        durasi:       parseFloat(cells[4].textContent),
+    };
+    payload[field] = field === 'nama_project' ? val : parseFloat(val);
+
+    try {
+        const res  = await fetch(`/data/update/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (!json.success) { td.textContent = original; showToast('Gagal update: ' + json.message, 'error'); }
+        else showToast('Data berhasil diupdate', 'success');
+    } catch(e) {
+        td.textContent = original;
+    }
+}
+
+// ===== HAPUS =====
+async function hapusProject(id) {
+    if (!confirm('Hapus project ini?')) return;
+    const res  = await fetch(`/data/hapus/${id}`, { method: 'DELETE' });
+    const json = await res.json();
+    if (json.success) { loadTable(); showToast('Project dihapus', 'success'); }
+    else showToast('Gagal menghapus', 'error');
+}
+
+async function hapusSemua() {
+    if (!confirm('Hapus SEMUA data project? Tindakan ini tidak bisa dibatalkan.')) return;
+    const res  = await fetch('/data/hapus-semua', { method: 'DELETE' });
+    const json = await res.json();
+    if (json.success) { loadTable(); showToast('Semua data dihapus', 'success'); }
+}
+
+// ===== TAMBAH MANUAL =====
+function showTambahModal() { modalTambah.show(); }
+
+async function tambahManual() {
+    const nama   = document.getElementById('add-nama').value.trim();
+    const mrc    = parseFloat(document.getElementById('add-mrc').value);
+    const sla    = parseFloat(document.getElementById('add-sla').value);
+    const durasi = parseFloat(document.getElementById('add-durasi').value);
+    const alertEl = document.getElementById('modal-alert');
+
+    if (!nama || isNaN(mrc) || isNaN(sla) || isNaN(durasi)) {
+        alertEl.innerHTML = '<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> Semua field harus diisi dengan benar.</div>';
+        return;
+    }
+
+    try {
+        const res  = await fetch('/data/tambah', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nama_project: nama, mrc, sla, durasi })
+        });
+        const json = await res.json();
+        if (json.success) {
+            modalTambah.hide();
+            alertEl.innerHTML = '';
+            ['add-nama','add-mrc','add-sla','add-durasi'].forEach(id => document.getElementById(id).value = '');
+            loadTable();
+            showToast('Project berhasil ditambahkan', 'success');
+        } else {
+            alertEl.innerHTML = `<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> ${json.message}</div>`;
+        }
+    } catch(e) {
+        alertEl.innerHTML = '<div class="alert-custom alert-error-custom">Gagal menambahkan project.</div>';
+    }
+}
+
+// Init
+loadTable();
+</script>
+{% endblock %}
