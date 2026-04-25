@@ -271,11 +271,15 @@ def tambah():
 @data_bp.route('/list', methods=['GET'])
 def list_projects():
     projects = get_all_projects()
-    # Konversi Decimal ke float agar bisa di-JSON-serialize
+    cleaned = []
     for p in projects:
-        p['mrc']    = float(p['mrc'])
-        p['sla']    = float(p['sla'])
-        p['durasi'] = float(p['durasi'])
-        p['created_at']  = str(p['created_at'])
-        p['updated_at']  = str(p['updated_at'])
-    return jsonify({'success': True, 'data': projects})
+        cleaned.append({
+            'id':           int(p['id']),
+            'nama_project': str(p['nama_project']),
+            'mrc':          float(p['mrc']),
+            'sla':          float(p['sla']),
+            'durasi':       float(p['durasi']),
+            'created_at':   str(p['created_at']) if p.get('created_at') else '',
+            'updated_at':   str(p['updated_at']) if p.get('updated_at') else '',
+        })
+    return jsonify({'success': True, 'data': cleaned})
