@@ -51,58 +51,61 @@ def get_skor_durasi(durasi):
 # Skor = Σ (bobot_kriteria × skor_sub_kriteria)
 # ============================================================
 def hitung_ahp(projects: list) -> list:
-    """
-    Menghitung skor AHP untuk setiap project.
-    
-    Args:
-        projects: list of dict {id, nama_project, mrc, sla, durasi}
-    
-    Returns:
-        list of dict {project_id, nama_project, skor, ranking,
-                      detail: {mrc_skor, sla_skor, durasi_skor}}
-    """
+    SUB_BOBOT = Config.SUB_BOBOT
     hasil = []
 
     for p in projects:
-        skor_mrc    = get_skor_mrc(float(p['mrc']))
-        skor_sla    = get_skor_sla(float(p['sla']))
-        skor_durasi = get_skor_durasi(float(p['durasi']))
+        mrc    = float(p['mrc'])
+        sla    = float(p['sla'])
+        durasi = float(p['durasi'])
 
-        # Normalisasi skor ke skala 0-1 (max skor = 5)
-        norm_mrc    = skor_mrc / 5
-        norm_sla    = skor_sla / 5
-        norm_durasi = skor_durasi / 5
+        # Sub-bobot sesuai PPT halaman Pembobotan
+        if mrc < 100:
+            sb_mrc = SUB_BOBOT['mrc']['rendah']   # 0.088
+        elif mrc <= 300:
+            sb_mrc = SUB_BOBOT['mrc']['sedang']   # 0.243
+        else:
+            sb_mrc = SUB_BOBOT['mrc']['tinggi']   # 0.669
 
-        # SLA adalah cost — dibalik
-        # Jika SLA bagus (skor 5 → norm 1.0), kontribusinya rendah biaya
-        # Namun karena sudah di-encode: SLA >= 98 → skor 5 (artinya baik)
-        # Jadi tidak perlu dibalik lagi di sini
+        if sla >= 98:
+            sb_sla = SUB_BOBOT['sla']['baik']     # 0.167
+        else:
+            sb_sla = SUB_BOBOT['sla']['kurang']   # 0.833
 
+        if durasi <= 3:
+            sb_durasi = SUB_BOBOT['durasi']['pendek']   # 0.110
+        elif durasi <= 5:
+            sb_durasi = SUB_BOBOT['durasi']['sedang']   # 0.309
+        else:
+            sb_durasi = SUB_BOBOT['durasi']['panjang']  # 0.581
+
+        # Skor AHP = Σ (bobot_kriteria × sub_bobot_nilai)
+        # SLA adalah cost — sub_bobot SLA tinggi berarti SLA BURUK
+        # jadi untuk SLA cost, kita balik: gunakan (1 - sb_sla) agar
+        # SLA baik (0.167) menjadi kontribusi besar
         skor_akhir = (
-            BOBOT['mrc']    * norm_mrc    +
-            BOBOT['sla']    * norm_sla    +
-            BOBOT['durasi'] * norm_durasi
+            BOBOT['mrc']    * sb_mrc             +
+            BOBOT['sla']    * (1 - sb_sla)       +  # cost: dibalik
+            BOBOT['durasi'] * sb_durasi
         )
 
         hasil.append({
-            'project_id':    p['id'],
-            'nama_project':  p['nama_project'],
-            'skor':          round(skor_akhir, 6),
-            'mrc_raw':       float(p['mrc']),
-            'sla_raw':       float(p['sla']),
-            'durasi_raw':    float(p['durasi']),
-            'norm_mrc':      round(norm_mrc, 6),
-            'norm_sla':      round(norm_sla, 6),
-            'norm_durasi':   round(norm_durasi, 6),
+            'project_id':   p['id'],
+            'nama_project': p['nama_project'],
+            'skor':         round(skor_akhir, 6),
+            'mrc_raw':      mrc,
+            'sla_raw':      sla,
+            'durasi_raw':   durasi,
+            'norm_mrc':     round(sb_mrc, 6),
+            'norm_sla':     round(sb_sla, 6),
+            'norm_durasi':  round(sb_durasi, 6),
         })
 
-    # Urutkan berdasarkan skor tertinggi
     hasil.sort(key=lambda x: x['skor'], reverse=True)
     for i, h in enumerate(hasil):
         h['ranking'] = i + 1
 
     return hasil
-
 
 # ============================================================
 # METODE 2: SAW (Simple Additive Weighting)
