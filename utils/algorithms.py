@@ -12,6 +12,7 @@ import math
 from config import Config
 
 BOBOT  = Config.BOBOT
+SUB_BOBOT = Config.SUB_BOBOT
 TIPE   = Config.TIPE_KRITERIA
 
 
@@ -22,28 +23,31 @@ TIPE   = Config.TIPE_KRITERIA
 def get_skor_mrc(mrc):
     """MRC dalam juta rupiah → skor sub-kriteria"""
     if mrc < 100:
-        return 1   # rendah
+        return 'rendah'   # rendah
     elif mrc <= 300:
-        return 3   # sedang
+        return 'sedang'   # sedang
     else:
-        return 5   # tinggi
+         return 'tinggi'   # tinggi
 
 def get_skor_sla(sla):
     """SLA dalam persen → skor sub-kriteria (cost: semakin kecil semakin baik)"""
     if sla >= 98:
-        return 5   # baik (SLA terpenuhi)
+        return 'baik'   # baik (SLA terpenuhi)
     else:
-        return 1   # kurang (SLA tidak terpenuhi)
+        return 'kurang'   # kurang (SLA tidak terpenuhi)
 
 def get_skor_durasi(durasi):
     """Durasi dalam tahun → skor sub-kriteria"""
     if durasi <= 3:
-        return 1   # pendek
+        return 'pendek'   # pendek
     elif durasi <= 5:
-        return 3   # sedang
+        return 'sedang'   # sedang
     else:
-        return 5   # panjang
+        return 'panjang'   # panjang
 
+def normalize_max(values):
+    max_val = max(values)
+    return [v / max_val if max_val != 0 else 0 for v in values]
 
 # ============================================================
 # METODE 1: AHP (Analytical Hierarchy Process)
@@ -51,61 +55,52 @@ def get_skor_durasi(durasi):
 # Skor = Σ (bobot_kriteria × skor_sub_kriteria)
 # ============================================================
 def hitung_ahp(projects: list) -> list:
-    SUB_BOBOT = Config.SUB_BOBOT
+    """
+    Menghitung skor AHP untuk setiap project.
+    
+    Args:
+        projects: list of dict {id, nama_project, mrc, sla, durasi}
+    
+    Returns:
+        list of dict {project_id, nama_project, skor, ranking,
+                      detail: {mrc_skor, sla_skor, durasi_skor}}
+    """
     hasil = []
 
     for p in projects:
-        mrc    = float(p['mrc'])
-        sla    = float(p['sla'])
-        durasi = float(p['durasi'])
+        skor_mrc    = get_skor_mrc(float(p['mrc']))
+        skor_sla    = get_skor_sla(float(p['sla']))
+        skor_durasi = get_skor_durasi(float(p['durasi']))
 
-        # Sub-bobot sesuai PPT halaman Pembobotan
-        if mrc < 100:
-            sb_mrc = SUB_BOBOT['mrc']['rendah']   # 0.088
-        elif mrc <= 300:
-            sb_mrc = SUB_BOBOT['mrc']['sedang']   # 0.243
-        else:
-            sb_mrc = SUB_BOBOT['mrc']['tinggi']   # 0.669
+        w_mrc = SUB_BOBOT['mrc'][skor_mrc]
+        w_sla = SUB_BOBOT['sla'][skor_sla]
+        w_durasi = SUB_BOBOT['durasi'][skor_durasi]
 
-        if sla >= 98:
-            sb_sla = SUB_BOBOT['sla']['baik']     # 0.167
-        else:
-            sb_sla = SUB_BOBOT['sla']['kurang']   # 0.833
-
-        if durasi <= 3:
-            sb_durasi = SUB_BOBOT['durasi']['pendek']   # 0.110
-        elif durasi <= 5:
-            sb_durasi = SUB_BOBOT['durasi']['sedang']   # 0.309
-        else:
-            sb_durasi = SUB_BOBOT['durasi']['panjang']  # 0.581
-
-        # Skor AHP = Σ (bobot_kriteria × sub_bobot_nilai)
-        # SLA adalah cost — sub_bobot SLA tinggi berarti SLA BURUK
-        # jadi untuk SLA cost, kita balik: gunakan (1 - sb_sla) agar
-        # SLA baik (0.167) menjadi kontribusi besar
         skor_akhir = (
-            BOBOT['mrc']    * sb_mrc             +
-            BOBOT['sla']    * (1 - sb_sla)       +  # cost: dibalik
-            BOBOT['durasi'] * sb_durasi
+            BOBOT['mrc']    * w_mrc    +
+            BOBOT['sla']    * w_sla    +
+            BOBOT['durasi'] * w_durasi
         )
 
         hasil.append({
-            'project_id':   p['id'],
-            'nama_project': p['nama_project'],
-            'skor':         round(skor_akhir, 6),
-            'mrc_raw':      mrc,
-            'sla_raw':      sla,
-            'durasi_raw':   durasi,
-            'norm_mrc':     round(sb_mrc, 6),
-            'norm_sla':     round(sb_sla, 6),
-            'norm_durasi':  round(sb_durasi, 6),
+            'project_id':    p['id'],
+            'nama_project':  p['nama_project'],
+            'skor':          round(skor_akhir, 6),
+            'mrc_raw':       float(p['mrc']),
+            'sla_raw':       float(p['sla']),
+            'durasi_raw':    float(p['durasi']),
+            'norm_mrc':      round(w_mrc, 6),
+            'norm_sla':      round(w_sla, 6),
+            'norm_durasi':   round(w_durasi, 6),
         })
 
+    # Urutkan berdasarkan skor tertinggi
     hasil.sort(key=lambda x: x['skor'], reverse=True)
     for i, h in enumerate(hasil):
         h['ranking'] = i + 1
 
     return hasil
+
 
 # ============================================================
 # METODE 2: SAW (Simple Additive Weighting)
