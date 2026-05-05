@@ -26,7 +26,7 @@
                         CR = 0.0532 (konsisten).
                     </div>
                     <div class="mt-3 d-flex gap-1 flex-wrap">
-                        <span style="background:#FFF3F5;color:var(--indosat-red);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Sub-kriteria</span>
+                        <span style="background:#FFF3F5;color:var(--ioh-red);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Sub-kriteria</span>
                         <span style="background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Skoring</span>
                     </div>
                 </div>
@@ -88,7 +88,7 @@
 <!-- Loading -->
 <div id="loading-section" style="display:none" class="text-center py-5">
     <div class="spinner-custom mx-auto mb-3" style="width:40px;height:40px;border-width:4px"></div>
-    <p class="fw-semibold" style="color:var(--indosat-dark)">Menjalankan perhitungan...</p>
+    <p class="fw-semibold" style="color:var(--ioh-black)">Menjalankan perhitungan...</p>
     <small class="text-muted">Mohon tunggu sebentar</small>
 </div>
 
@@ -98,7 +98,7 @@
         <div class="card-header-custom mb-3">
             <div class="card-title-custom">
                 <i class="bi bi-trophy-fill" style="color:#D97706"></i>
-                Hasil Ranking — <span id="hasil-metode-label" class="mono" style="color:var(--indosat-red)"></span>
+                Hasil Ranking — <span id="hasil-metode-label" class="mono" style="color:var(--ioh-red)"></span>
             </div>
             <div id="hasil-meta" style="font-size:12px;color:#6B7280"></div>
         </div>
@@ -137,23 +137,17 @@
 {% block extra_js %}
 <script>
 let selectedMethod = null;
-let allCards = [];
+const allCards = Array.from(document.querySelectorAll('.method-card'));
 
 function selectMethod(method, card) {
     allCards.forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
-    allCards = [card];
     selectedMethod = method;
 
     document.getElementById('btn-hitung').disabled = false;
     document.getElementById('selected-method-label').textContent = method;
     document.getElementById('method-status').textContent = `Metode ${method} dipilih`;
 }
-
-// Track all method cards
-document.querySelectorAll('.method-card').forEach(c => allCards.push(c));
-// Reset to empty
-allCards = Array.from(document.querySelectorAll('.method-card'));
 
 async function hitungSatu() {
     if (!selectedMethod) return;
@@ -218,7 +212,6 @@ function renderHasil(hasil, metode) {
     document.getElementById('hasil-metode-label').textContent = metode;
     document.getElementById('hasil-meta').textContent = `${hasil.length} project diranking`;
 
-    // Ranking table
     const rows = hasil.map(h => {
         const rankClass = h.ranking === 1 ? 'rank-1' : h.ranking === 2 ? 'rank-2' : h.ranking === 3 ? 'rank-3' : 'rank-n';
         return `
@@ -229,7 +222,7 @@ function renderHasil(hasil, metode) {
             <td class="mono">${parseFloat(h.sla_raw).toFixed(2)}%</td>
             <td class="mono">${parseFloat(h.durasi_raw).toFixed(1)} thn</td>
             <td>
-                <span class="mono fw-bold" style="color:var(--indosat-red);font-size:15px">${parseFloat(h.skor).toFixed(6)}</span>
+                <span class="mono fw-bold" style="color:var(--ioh-red);font-size:15px">${parseFloat(h.skor).toFixed(6)}</span>
                 <div class="progress-bar-custom mt-1" style="width:100px">
                     <div class="progress-fill" style="width:${Math.min(100, parseFloat(h.skor) * 100)}%"></div>
                 </div>
@@ -252,7 +245,6 @@ function renderHasil(hasil, metode) {
             <tbody>${rows}</tbody>
         </table>`;
 
-    // Normalisasi table
     const normRows = hasil.map(h => `
         <tr>
             <td class="fw-semibold">${h.nama_project}</td>
@@ -287,13 +279,13 @@ function renderSemuaHasil(semuaHasil) {
             <tr>
                 <td><span class="badge-rank ${rankClass}">${h.ranking}</span></td>
                 <td class="fw-semibold" style="font-size:13px">${h.nama_project}</td>
-                <td class="mono" style="color:var(--indosat-red);font-weight:700">${parseFloat(h.skor).toFixed(4)}</td>
+                <td class="mono" style="color:var(--ioh-red);font-weight:700">${parseFloat(h.skor).toFixed(4)}</td>
             </tr>`;
         }).join('');
 
         html += `
         <div class="mb-4">
-            <h6 class="mono fw-bold mb-2" style="color:var(--indosat-red);font-size:15px">
+            <h6 class="mono fw-bold mb-2" style="color:var(--ioh-red);font-size:15px">
                 ${m} <span style="color:#6B7280;font-size:12px;font-weight:400">— ${hasil.length} project</span>
             </h6>
             <table class="table-custom">

@@ -5,8 +5,7 @@
 import pandas as pd
 from flask import Blueprint, render_template, request, jsonify
 from utils.db import (
-    get_all_projects, get_project_by_id,
-    insert_projects_bulk, update_project,
+    get_all_projects,insert_projects_bulk, update_project,
     delete_project, clear_all_projects, execute_query
 )
 

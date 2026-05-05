@@ -18,19 +18,19 @@
                     <div class="col-6">
                         <div style="background:#F8FAFC;border-radius:8px;padding:14px">
                             <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Algoritma</div>
-                            <div style="font-size:15px;font-weight:700;color:var(--indosat-dark);margin-top:4px">Decision Tree (CART)</div>
+                            <div style="font-size:15px;font-weight:700;color:var(--ioh-black);margin-top:4px">Decision Tree (CART)</div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div style="background:#F8FAFC;border-radius:8px;padding:14px">
                             <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Kriteria Split</div>
-                            <div style="font-size:15px;font-weight:700;color:var(--indosat-dark);margin-top:4px">Gini Impurity</div>
+                            <div style="font-size:15px;font-weight:700;color:var(--ioh-black);margin-top:4px">Gini Impurity</div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div style="background:#F8FAFC;border-radius:8px;padding:14px">
                             <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Fitur Input</div>
-                            <div style="font-size:13px;font-weight:600;color:var(--indosat-dark);margin-top:4px">MRC · SLA · Durasi</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--ioh-black);margin-top:4px">MRC · SLA · Durasi</div>
                         </div>
                     </div>
                     <div class="col-6">
@@ -124,7 +124,6 @@ async function jalankanPrediksi() {
     try {
         const res  = await fetch('/ml/prediksi', { method: 'POST' });
 
-        // Cek apakah response adalah JSON
         const contentType = res.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             throw new Error('Server mengembalikan response tidak valid. Cek terminal Flask untuk detail error.');
@@ -155,14 +154,13 @@ async function jalankanPrediksi() {
 }
 
 function renderHasilML(hasil, info) {
-    const layak     = hasil.filter(h => h.prediksi === 'Layak').length;
+    const layak      = hasil.filter(h => h.prediksi === 'Layak').length;
     const tidakLayak = hasil.length - layak;
 
-    // Stats
     document.getElementById('ml-stats').innerHTML = `
         <div class="col-4">
             <div class="stat-card">
-                <div class="stat-icon blue"><i class="bi bi-diagram-3"></i></div>
+                <div class="stat-icon cyan"><i class="bi bi-diagram-3"></i></div>
                 <div>
                     <div class="stat-value">${info.akurasi_training}%</div>
                     <div class="stat-label">Akurasi Training *</div>
@@ -170,7 +168,7 @@ function renderHasilML(hasil, info) {
             </div>
         </div>
         <div class="col-4">
-            <div class="stat-card">
+            <div class="stat-card green">
                 <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
                 <div>
                     <div class="stat-value">${layak}</div>
@@ -179,7 +177,7 @@ function renderHasilML(hasil, info) {
             </div>
         </div>
         <div class="col-4">
-            <div class="stat-card">
+            <div class="stat-card red">
                 <div class="stat-icon red"><i class="bi bi-x-circle-fill"></i></div>
                 <div>
                     <div class="stat-value">${tidakLayak}</div>
@@ -188,28 +186,25 @@ function renderHasilML(hasil, info) {
             </div>
         </div>`;
 
-    // Model detail
     document.getElementById('model-detail').textContent =
         `Kedalaman: ${info.max_depth} | Nodes: ${info.jumlah_node} | Leaves: ${info.jumlah_leaf}`;
 
-    // Feature importance
     const fi = info.feature_importance;
     const fiHtml = Object.entries(fi).map(([name, val]) => `
         <div class="d-flex align-items-center gap-3 mb-3">
-            <div style="width:160px;font-size:13px;font-weight:600;color:#374151">${name}</div>
+            <div style="width:160px;font-size:13px;font-weight:600;color:var(--ioh-gray-dark)">${name}</div>
             <div style="flex:1">
                 <div class="progress-bar-custom">
                     <div class="progress-fill" style="width:${(val*100).toFixed(1)}%"></div>
                 </div>
             </div>
-            <div class="mono fw-bold" style="width:60px;text-align:right;color:var(--indosat-red)">
+            <div class="mono fw-bold" style="width:60px;text-align:right;color:var(--ioh-red)">
                 ${(val*100).toFixed(1)}%
             </div>
         </div>`).join('');
 
     document.getElementById('feature-importance-container').innerHTML = fiHtml;
 
-    // Prediksi table
     const rows = hasil.map((h, i) => `
         <tr>
             <td>${i+1}</td>

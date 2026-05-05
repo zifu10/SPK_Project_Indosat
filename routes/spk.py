@@ -170,5 +170,4 @@ def _simpan_detail_normalisasi(sesi_id, metode, hasil):
         )
         for h in hasil
     ]
-    from utils.db import execute_many
     execute_many(query, params)

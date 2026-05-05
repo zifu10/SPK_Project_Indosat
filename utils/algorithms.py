@@ -45,10 +45,6 @@ def get_skor_durasi(durasi):
     else:
         return 'panjang'   # panjang
 
-def normalize_max(values):
-    max_val = max(values)
-    return [v / max_val if max_val != 0 else 0 for v in values]
-
 # ============================================================
 # METODE 1: AHP (Analytical Hierarchy Process)
 # Menggunakan bobot yang sudah dihitung dari matriks perbandingan
