@@ -1,54 +1,56 @@
 {% extends "base.html" %}
-{% block title %}Prediksi ML{% endblock %}
-{% block page_title %}<span>Prediksi ML</span> — Decision Tree Classifier{% endblock %}
+{% block title %}Rekomendasi ML{% endblock %}
+{% block page_title %}<span>Rekomendasi ML</span> — Borda Count Rank Aggregation{% endblock %}
 
 {% block content %}
 
-<!-- Info Model -->
+<!-- Info Metode -->
 <div class="row g-3 mb-4">
     <div class="col-md-8">
         <div class="card h-100">
             <div class="card-header-custom mb-3">
                 <div class="card-title-custom">
-                    <i class="bi bi-cpu-fill"></i> Informasi Model Machine Learning
+                    <i class="bi bi-cpu-fill"></i> Informasi Metode Agregasi
                 </div>
             </div>
             <div class="px-4 pb-4">
                 <div class="row g-3">
                     <div class="col-6">
                         <div style="background:#F8FAFC;border-radius:8px;padding:14px">
-                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Algoritma</div>
-                            <div style="font-size:15px;font-weight:700;color:var(--ioh-black);margin-top:4px">Decision Tree (CART)</div>
+                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Metode</div>
+                            <div style="font-size:15px;font-weight:700;color:var(--ioh-black);margin-top:4px">Borda Count</div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div style="background:#F8FAFC;border-radius:8px;padding:14px">
-                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Kriteria Split</div>
-                            <div style="font-size:15px;font-weight:700;color:var(--ioh-black);margin-top:4px">Gini Impurity</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div style="background:#F8FAFC;border-radius:8px;padding:14px">
-                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Fitur Input</div>
-                            <div style="font-size:13px;font-weight:600;color:var(--ioh-black);margin-top:4px">MRC · SLA · Durasi</div>
+                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Input</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--ioh-black);margin-top:4px">Ranking dari 4 metode SPK</div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div style="background:#F8FAFC;border-radius:8px;padding:14px">
                             <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Output</div>
                             <div style="font-size:13px;margin-top:4px">
-                                <span class="badge-layak me-1">Layak</span>
-                                <span class="badge-tidak">Tidak Layak</span>
+                                <span style="background:#E5F7EE;color:#006B35;padding:3px 8px;border-radius:12px;font-size:12px;font-weight:600">Sangat Layak</span>
+                                <span class="badge-layak ms-1">Layak</span>
+                                <span class="badge-tidak ms-1">Tidak Layak</span>
                             </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div style="background:#F8FAFC;border-radius:8px;padding:14px">
+                            <div style="font-size:11px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Sumber data</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--ioh-black);margin-top:4px">AHP · SAW · MOORA · WP</div>
                         </div>
                     </div>
                 </div>
                 <div class="alert-custom alert-info-custom mt-3">
                     <i class="bi bi-lightbulb-fill"></i>
                     <div>
-                        Label <strong>Layak/Tidak Layak</strong> ditentukan berdasarkan skor SAW —
-                        project dengan skor ≥ median = <strong>Layak</strong>.
-                        Model dilatih ulang setiap kali prediksi dijalankan menggunakan data terkini.
+                        Tiap metode SPK memberi <strong>poin Borda = N − ranking</strong>.
+                        Poin dari 4 metode dijumlahkan dan dinormalisasi ke <strong>0–100%</strong>
+                        sebagai skor kelayakan akhir. Project dengan skor ≥ 75% = Sangat Layak,
+                        50–74% = Layak, &lt; 50% = Tidak Layak.
                     </div>
                 </div>
             </div>
@@ -59,18 +61,24 @@
         <div class="card h-100">
             <div class="card-header-custom mb-3">
                 <div class="card-title-custom">
-                    <i class="bi bi-play-circle-fill"></i> Jalankan Prediksi
+                    <i class="bi bi-play-circle-fill"></i> Jalankan Agregasi
                 </div>
             </div>
             <div class="px-4 pb-4 d-flex flex-column gap-3">
                 <p style="font-size:13px;color:#6B7280;line-height:1.6">
-                    Klik tombol di bawah untuk melatih model dan mendapatkan prediksi
-                    kelayakan perpanjangan untuk semua project yang tersimpan.
+                    Agregasi akan membaca hasil ranking terbaru dari keempat metode SPK
+                    di database, lalu menggabungkannya menjadi satu ranking final.
                 </p>
-                <button class="btn-primary-custom justify-content-center py-3" onclick="jalankanPrediksi()" id="btn-prediksi">
-                    <i class="bi bi-cpu"></i> Jalankan Prediksi ML
+                <div class="alert-custom alert-warn-custom" style="font-size:12px">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    Pastikan sudah menjalankan <strong>semua 4 metode SPK</strong>
+                    di menu Perhitungan SPK terlebih dahulu.
+                </div>
+                <button class="btn-primary-custom justify-content-center py-3"
+                        onclick="jalankanAgregasi()" id="btn-agregasi">
+                    <i class="bi bi-diagram-3"></i> Jalankan Agregasi ML
                 </button>
-                <div id="prediksi-status" style="font-size:12px;color:#9CA3AF;text-align:center"></div>
+                <div id="agregasi-status" style="font-size:12px;color:#9CA3AF;text-align:center"></div>
             </div>
         </div>
     </div>
@@ -79,183 +87,362 @@
 <!-- Loading -->
 <div id="loading-ml" style="display:none" class="text-center py-5">
     <div class="spinner-custom mx-auto mb-3" style="width:40px;height:40px;border-width:4px"></div>
-    <p class="fw-semibold">Melatih model & menjalankan prediksi...</p>
-    <small class="text-muted">Decision Tree sedang belajar dari data Anda</small>
+    <p class="fw-semibold">Menggabungkan hasil dari 4 metode SPK...</p>
+    <small class="text-muted">Borda Count sedang menghitung skor konsensus</small>
 </div>
 
-<!-- Hasil Prediksi -->
+<!-- Hasil -->
 <div id="hasil-ml" style="display:none">
 
     <!-- Stat ringkasan -->
     <div class="row g-3 mb-4" id="ml-stats"></div>
 
-    <!-- Feature Importance -->
+    <!-- Grafik Bar Chart -->
     <div class="card mb-4">
         <div class="card-header-custom mb-3">
             <div class="card-title-custom">
-                <i class="bi bi-bar-chart-fill"></i> Feature Importance
+                <i class="bi bi-bar-chart-fill"></i> Grafik Rekomendasi — Skor Kelayakan Akhir
             </div>
-            <div id="model-detail" style="font-size:12px;color:#6B7280"></div>
+            <div id="chart-meta" style="font-size:12px;color:#6B7280"></div>
         </div>
-        <div class="px-4 pb-4" id="feature-importance-container"></div>
+        <div class="px-4 pb-4">
+            <canvas id="borda-chart" style="width:100%;max-height:360px"></canvas>
+        </div>
     </div>
 
-    <!-- Tabel hasil -->
+    <!-- Tabel Ranking Final + Detail per Metode -->
+    <div class="card mb-4">
+        <div class="card-header-custom mb-3">
+            <div class="card-title-custom">
+                <i class="bi bi-trophy-fill" style="color:#D97706"></i> Ranking Final & Detail Voting
+            </div>
+            <div style="font-size:12px;color:#6B7280">
+                Angka dalam tabel = ranking project di tiap metode SPK
+            </div>
+        </div>
+        <div class="px-4 pb-4" id="hasil-table-container"></div>
+    </div>
+
+    <!-- Penjelasan metode -->
     <div class="card">
         <div class="card-header-custom mb-3">
             <div class="card-title-custom">
-                <i class="bi bi-list-ol"></i> Hasil Prediksi Per Project
+                <i class="bi bi-info-circle-fill"></i> Cara Membaca Hasil
             </div>
         </div>
-        <div class="px-4 pb-4" id="prediksi-table-container"></div>
+        <div class="px-4 pb-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div style="background:#F8FAFC;border-radius:8px;padding:14px">
+                        <div style="font-size:13px;font-weight:700;color:var(--ioh-black);margin-bottom:6px">
+                            <i class="bi bi-calculator" style="color:var(--ioh-red)"></i> Poin Borda
+                        </div>
+                        <div style="font-size:13px;color:#6B7280;line-height:1.5">
+                            Jika ada N project, project ranking ke-1 dapat <strong>N−1 poin</strong>,
+                            ranking ke-2 dapat <strong>N−2 poin</strong>, dst.
+                            Poin dari 4 metode dijumlahkan.
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div style="background:#F8FAFC;border-radius:8px;padding:14px">
+                        <div style="font-size:13px;font-weight:700;color:var(--ioh-black);margin-bottom:6px">
+                            <i class="bi bi-percent" style="color:var(--ioh-red)"></i> Skor Kelayakan
+                        </div>
+                        <div style="font-size:13px;color:#6B7280;line-height:1.5">
+                            Total poin dibagi poin maksimum teoritis × 100%.
+                            Poin maks = (N−1) × 4.
+                            Skor 100% = ranking 1 di semua metode.
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div style="background:#F8FAFC;border-radius:8px;padding:14px">
+                        <div style="font-size:13px;font-weight:700;color:var(--ioh-black);margin-bottom:6px">
+                            <i class="bi bi-activity" style="color:var(--ioh-red)"></i> Konsistensi
+                        </div>
+                        <div style="font-size:13px;color:#6B7280;line-height:1.5">
+                            Seberapa sepakat 4 metode untuk project ini.
+                            100% = semua metode memberi ranking yang sama.
+                            Makin rendah = makin besar perbedaan antar metode.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 {% endblock %}
 
 {% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <script>
-async function jalankanPrediksi() {
-    document.getElementById('loading-ml').style.display = 'block';
-    document.getElementById('hasil-ml').style.display = 'none';
-    document.getElementById('btn-prediksi').disabled = true;
-    document.getElementById('prediksi-status').textContent = 'Sedang memproses...';
+let chartInstance = null;
+
+async function jalankanAgregasi() {
+    document.getElementById('loading-ml').style.display    = 'block';
+    document.getElementById('hasil-ml').style.display      = 'none';
+    document.getElementById('btn-agregasi').disabled       = true;
+    document.getElementById('agregasi-status').textContent = 'Sedang memproses...';
 
     try {
         const res  = await fetch('/ml/prediksi', { method: 'POST' });
-
-        const contentType = res.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server mengembalikan response tidak valid. Cek terminal Flask untuk detail error.');
-        }
-
         const json = await res.json();
 
         document.getElementById('loading-ml').style.display = 'none';
 
         if (!json.success) {
-            document.getElementById('prediksi-status').innerHTML =
-                `<span style="color:#DC2626"><i class="bi bi-x-circle-fill me-1"></i>${json.message}</span>`;
+            document.getElementById('agregasi-status').innerHTML =
+                `<span style="color:#DC2626">
+                    <i class="bi bi-x-circle-fill me-1"></i>${json.message}
+                </span>`;
             return;
         }
 
-        renderHasilML(json.hasil, json.model_info);
+        renderHasil(json.hasil, json.info);
         document.getElementById('hasil-ml').style.display = 'block';
-        document.getElementById('prediksi-status').innerHTML =
-            `<span style="color:#16A34A"><i class="bi bi-check-circle-fill me-1"></i>Prediksi selesai</span>`;
+        document.getElementById('agregasi-status').innerHTML =
+            `<span style="color:#16A34A">
+                <i class="bi bi-check-circle-fill me-1"></i>Agregasi selesai
+            </span>`;
 
     } catch(e) {
         document.getElementById('loading-ml').style.display = 'none';
-        document.getElementById('prediksi-status').innerHTML =
+        document.getElementById('agregasi-status').innerHTML =
             `<span style="color:#DC2626">Error: ${e.message}</span>`;
     } finally {
-        document.getElementById('btn-prediksi').disabled = false;
+        document.getElementById('btn-agregasi').disabled = false;
     }
 }
 
-function renderHasilML(hasil, info) {
-    const layak      = hasil.filter(h => h.prediksi === 'Layak').length;
-    const tidakLayak = hasil.length - layak;
+function renderHasil(hasil, info) {
 
+    // ── Stat Cards ──────────────────────────────────────────
     document.getElementById('ml-stats').innerHTML = `
-        <div class="col-4">
+        <div class="col-3">
             <div class="stat-card">
-                <div class="stat-icon cyan"><i class="bi bi-diagram-3"></i></div>
+                <div class="stat-icon red"><i class="bi bi-diagram-3"></i></div>
                 <div>
-                    <div class="stat-value">${info.akurasi_training}%</div>
-                    <div class="stat-label">Akurasi Training *</div>
+                    <div class="stat-value">${info.jumlah_project}</div>
+                    <div class="stat-label">Total Project</div>
                 </div>
             </div>
         </div>
-        <div class="col-4">
-            <div class="stat-card green">
-                <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="col-3">
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="bi bi-star-fill"></i></div>
                 <div>
-                    <div class="stat-value">${layak}</div>
-                    <div class="stat-label">Prediksi Layak</div>
+                    <div class="stat-value">${info.jumlah_sangat_layak}</div>
+                    <div class="stat-label">Sangat Layak</div>
                 </div>
             </div>
         </div>
-        <div class="col-4">
-            <div class="stat-card red">
-                <div class="stat-icon red"><i class="bi bi-x-circle-fill"></i></div>
+        <div class="col-3">
+            <div class="stat-card">
+                <div class="stat-icon cyan"><i class="bi bi-check-circle-fill"></i></div>
                 <div>
-                    <div class="stat-value">${tidakLayak}</div>
-                    <div class="stat-label">Prediksi Tidak Layak</div>
+                    <div class="stat-value">${info.jumlah_layak}</div>
+                    <div class="stat-label">Layak</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="stat-card">
+                <div class="stat-icon yellow"><i class="bi bi-x-circle-fill"></i></div>
+                <div>
+                    <div class="stat-value">${info.jumlah_tidak_layak}</div>
+                    <div class="stat-label">Tidak Layak</div>
                 </div>
             </div>
         </div>`;
 
-    document.getElementById('model-detail').textContent =
-        `Kedalaman: ${info.max_depth} | Nodes: ${info.jumlah_node} | Leaves: ${info.jumlah_leaf}`;
+    // ── Bar Chart ───────────────────────────────────────────
+    const labels = hasil.map(h => h.nama_project.length > 18
+        ? h.nama_project.substring(0, 18) + '…'
+        : h.nama_project
+    );
+    const scores = hasil.map(h => h.skor_borda);
+    const colors = hasil.map(h => {
+        if (h.kategori === 'Sangat Layak') return 'rgba(0, 166, 81, 0.85)';
+        if (h.kategori === 'Layak')        return 'rgba(0, 181, 226, 0.85)';
+        return 'rgba(228, 0, 43, 0.75)';
+    });
+    const borderColors = hasil.map(h => {
+        if (h.kategori === 'Sangat Layak') return '#00A651';
+        if (h.kategori === 'Layak')        return '#00B5E2';
+        return '#E4002B';
+    });
 
-    const fi = info.feature_importance;
-    const fiHtml = Object.entries(fi).map(([name, val]) => `
-        <div class="d-flex align-items-center gap-3 mb-3">
-            <div style="width:160px;font-size:13px;font-weight:600;color:var(--ioh-gray-dark)">${name}</div>
-            <div style="flex:1">
-                <div class="progress-bar-custom">
-                    <div class="progress-fill" style="width:${(val*100).toFixed(1)}%"></div>
-                </div>
-            </div>
-            <div class="mono fw-bold" style="width:60px;text-align:right;color:var(--ioh-red)">
-                ${(val*100).toFixed(1)}%
-            </div>
-        </div>`).join('');
+    document.getElementById('chart-meta').textContent =
+        `Rata-rata konsistensi antar metode: ${info.rata_konsistensi}%`;
 
-    document.getElementById('feature-importance-container').innerHTML = fiHtml;
+    if (chartInstance) chartInstance.destroy();
 
-    const rows = hasil.map((h, i) => `
+    chartInstance = new Chart(
+        document.getElementById('borda-chart'),
+        {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Skor Kelayakan Borda (%)',
+                    data: scores,
+                    backgroundColor: colors,
+                    borderColor: borderColors,
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title : (items) => hasil[items[0].dataIndex].nama_project,
+                            label : (item)  => ` Skor: ${item.raw.toFixed(2)}%`,
+                            afterLabel: (item) => {
+                                const h = hasil[item.dataIndex];
+                                return [
+                                    ` Kategori: ${h.kategori}`,
+                                    ` Konsistensi: ${h.konsistensi}%`,
+                                    ` Ranking final: #${h.ranking_final}`,
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0, max: 100,
+                        ticks: {
+                            callback: v => v + '%',
+                            font: { size: 12 }
+                        },
+                        grid: { color: 'rgba(0,0,0,0.06)' }
+                    },
+                    x: {
+                        ticks: { font: { size: 11 } },
+                        grid: { display: false }
+                    }
+                },
+                // Garis referensi 75% dan 50%
+                plugins: {
+                    legend: { display: false },
+                    annotation: undefined,
+                }
+            },
+            plugins: [{
+                id: 'threshold-lines',
+                afterDraw(chart) {
+                    const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+                    const drawLine = (val, color, label) => {
+                        const yPos = y.getPixelForValue(val);
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.setLineDash([6, 4]);
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth   = 1.2;
+                        ctx.moveTo(left, yPos);
+                        ctx.lineTo(right, yPos);
+                        ctx.stroke();
+                        ctx.font      = '11px sans-serif';
+                        ctx.fillStyle = color;
+                        ctx.fillText(label, right + 4, yPos + 4);
+                        ctx.restore();
+                    };
+                    drawLine(75, '#00A651', '75% Sangat Layak');
+                    drawLine(50, '#00B5E2', '50% Layak');
+                }
+            }]
+        }
+    );
+
+    // ── Tabel Ranking Final ─────────────────────────────────
+    const metodes = info.metode_aktif;
+
+    const headerMetode = metodes.map(m =>
+        `<th style="text-align:center">${m}</th>`
+    ).join('');
+
+    const rows = hasil.map(h => {
+        const rankClass = h.ranking_final === 1 ? 'rank-1'
+                        : h.ranking_final === 2 ? 'rank-2'
+                        : h.ranking_final === 3 ? 'rank-3' : 'rank-n';
+
+        // Badge kategori
+        let badgeKat;
+        if (h.kategori === 'Sangat Layak') {
+            badgeKat = '<span style="background:#E5F7EE;color:#006B35;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600"><i class="bi bi-star-fill me-1"></i>Sangat Layak</span>';
+        } else if (h.kategori === 'Layak') {
+            badgeKat = '<span class="badge-layak"><i class="bi bi-check-circle me-1"></i>Layak</span>';
+        } else {
+            badgeKat = '<span class="badge-tidak"><i class="bi bi-x-circle me-1"></i>Tidak Layak</span>';
+        }
+
+        // Ranking per metode — warnai ranking 1-3
+        const rankCols = metodes.map(m => {
+            const r = h.ranking_per_metode[m];
+            if (r === null || r === undefined) return '<td style="text-align:center;color:#9CA3AF">—</td>';
+            const style = r === 1 ? 'font-weight:700;color:#D97706'
+                        : r <= 3 ? 'font-weight:600;color:#374151' : 'color:#6B7280';
+            return `<td class="mono" style="text-align:center;${style}">${r}</td>`;
+        }).join('');
+
+        // Progress bar skor
+        const barColor = h.kategori === 'Sangat Layak' ? '#00A651'
+                       : h.kategori === 'Layak'        ? '#00B5E2' : '#E4002B';
+
+        return `
         <tr>
-            <td>${i+1}</td>
+            <td><span class="badge-rank ${rankClass}">${h.ranking_final}</span></td>
             <td class="fw-semibold">${h.nama_project}</td>
-            <td class="mono">${parseFloat(h.mrc).toLocaleString('id-ID')}</td>
-            <td class="mono">${parseFloat(h.sla).toFixed(2)}%</td>
-            <td class="mono">${parseFloat(h.durasi).toFixed(1)} thn</td>
-            <td>
-                ${h.prediksi === 'Layak' ?
-                    '<span class="badge-layak"><i class="bi bi-check-circle-fill me-1"></i>Layak</span>' :
-                    '<span class="badge-tidak"><i class="bi bi-x-circle-fill me-1"></i>Tidak Layak</span>'}
-            </td>
             <td>
                 <div class="d-flex align-items-center gap-2">
                     <div class="progress-bar-custom" style="width:80px">
-                        <div class="progress-fill" style="width:${(h.probabilitas*100).toFixed(0)}%;
-                            background:${h.prediksi==='Layak'?'#16A34A':'#DC2626'}"></div>
+                        <div class="progress-fill" style="width:${h.skor_borda}%;background:${barColor}"></div>
                     </div>
-                    <span class="mono" style="font-size:12px;font-weight:600">
-                        ${(h.probabilitas*100).toFixed(1)}%
+                    <span class="mono fw-bold" style="color:${barColor};font-size:14px">
+                        ${h.skor_borda.toFixed(1)}%
                     </span>
                 </div>
             </td>
+            <td>${badgeKat}</td>
+            ${rankCols}
             <td>
-                <span style="font-size:12px;color:#9CA3AF">
-                    ${h.label_asli === 'Layak' ?
-                        '<span class="badge-layak" style="font-size:11px">Layak</span>' :
-                        '<span class="badge-tidak" style="font-size:11px">Tidak Layak</span>'}
-                </span>
+                <div class="d-flex align-items-center gap-1">
+                    <div class="progress-bar-custom" style="width:50px">
+                        <div class="progress-fill" style="width:${h.konsistensi}%;background:#8B5CF6"></div>
+                    </div>
+                    <span class="mono" style="font-size:12px;color:#6B7280">${h.konsistensi}%</span>
+                </div>
             </td>
-        </tr>`).join('');
+        </tr>`;
+    }).join('');
 
-    document.getElementById('prediksi-table-container').innerHTML = `
-        <table class="table-custom">
-            <thead>
-                <tr>
-                    <th>#</th><th>Nama Project</th>
-                    <th>MRC</th><th>SLA</th><th>Durasi</th>
-                    <th>Prediksi</th><th>Probabilitas</th><th>Label Aktual</th>
-                </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-        </table>
-        <div class="alert-custom alert-warn-custom mt-3">
-            <i class="bi bi-info-circle-fill"></i>
-            <div><strong>Label Aktual</strong> adalah label yang digunakan untuk melatih model,
-            dihitung berdasarkan skor SAW (≥ median = Layak). Bukan keputusan final perusahaan.</div>
+    document.getElementById('hasil-table-container').innerHTML = `
+        <div style="overflow-x:auto">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Nama Project</th>
+                        <th>Skor Borda</th>
+                        <th>Kategori</th>
+                        ${headerMetode}
+                        <th>Konsistensi</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
         </div>
-        <p style="font-size:12px;color:#939598;margin-top:8px">
-            * Akurasi diukur pada data training (bukan data uji terpisah), 
-            wajar bernilai tinggi karena jumlah data terbatas.
+        <p style="font-size:12px;color:#9CA3AF;margin-top:8px">
+            * Kolom AHP/SAW/MOORA/WP menunjukkan ranking project di masing-masing metode.
+            Angka lebih kecil = ranking lebih baik.
         </p>`;
 }
 </script>

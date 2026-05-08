@@ -2,8 +2,6 @@
 {% block title %}Data Project{% endblock %}
 {% block page_title %}<span>Data Project</span> — Kelola Data Input{% endblock %}
 
-{% block extra_css %}{% endblock %}
-
 {% block content %}
 
 <!-- Upload Section -->
@@ -12,14 +10,13 @@
         <div class="card-title-custom">
             <i class="bi bi-cloud-upload-fill"></i> Upload Data Project (Excel)
         </div>
-        <a href="https://docs.google.com/spreadsheets/d/1lDGVbxQAYGPfxxdlhFaRJ9vAxBcBFm8J/export?format=xlsx" 
+        <a href="https://docs.google.com/spreadsheets/d/1lDGVbxQAYGPfxxdlhFaRJ9vAxBcBFm8J/export?format=xlsx"
             class="btn-outline-custom" style="font-size:12px;padding:6px 14px"
             target="_blank" download>
-                <i class="bi bi-download"></i> Download Template Excel
+            <i class="bi bi-download"></i> Download Template Excel
         </a>
     </div>
     <div class="px-4 pb-4">
-        <!-- Format info -->
         <div class="alert-custom alert-info-custom mb-3">
             <i class="bi bi-info-circle-fill"></i>
             <div>
@@ -28,7 +25,6 @@
             </div>
         </div>
 
-        <!-- Drop zone -->
         <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
             <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none">
             <i class="bi bi-file-earmark-spreadsheet mb-3 d-block"></i>
@@ -36,7 +32,6 @@
             <small class="text-muted">Format: .xlsx / .xls — Maksimal 5MB</small>
         </div>
 
-        <!-- Preview area (hidden until upload) -->
         <div id="preview-area" style="display:none" class="mt-4">
             <div class="d-flex align-items-center justify-content-between mb-2">
                 <div class="card-title-custom">
@@ -61,12 +56,8 @@
                 <table class="table-custom" id="preview-table">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Nama Project</th>
-                            <th>MRC (juta Rp)</th>
-                            <th>SLA (%)</th>
-                            <th>Durasi (thn)</th>
-                            <th>Aksi</th>
+                            <th>#</th><th>Nama Project</th><th>MRC (juta Rp)</th>
+                            <th>SLA (%)</th><th>Durasi (thn)</th><th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="preview-tbody"></tbody>
@@ -83,13 +74,15 @@
     <div class="card-header-custom mb-3">
         <div class="card-title-custom">
             <i class="bi bi-table"></i> Data Project Tersimpan
-            <span id="total-badge" class="ms-2" style="background:#FFF3F5;color:var(--ioh-red);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600"></span>
+            <span id="total-badge" class="ms-2"
+                style="background:#FFF3F5;color:var(--ioh-red);padding:2px 10px;
+                       border-radius:20px;font-size:12px;font-weight:600"></span>
         </div>
         <div class="d-flex gap-2">
             <button class="btn-outline-custom" onclick="showTambahModal()" style="font-size:12px;padding:6px 14px">
                 <i class="bi bi-plus"></i> Tambah Manual
             </button>
-            <button class="btn-outline-custom" onclick="hapusSemua()"
+            <button class="btn-outline-custom" onclick="konfirmHapusSemua()"
                 style="font-size:12px;padding:6px 14px;color:#DC2626;border-color:#FCA5A5">
                 <i class="bi bi-trash3"></i> Hapus Semua
             </button>
@@ -102,7 +95,10 @@
     </div>
 </div>
 
-<!-- Modal Tambah Manual -->
+
+<!-- ============================================================
+     MODAL: Tambah Manual
+     ============================================================ -->
 <div class="modal fade" id="modalTambah" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius:14px;border:none">
@@ -115,7 +111,8 @@
             <div class="modal-body pt-3">
                 <div class="mb-3">
                     <label class="form-label" style="font-size:13px;font-weight:600">Nama Project</label>
-                    <input type="text" id="add-nama" class="form-control" placeholder="Contoh: Project Alpha - PT Telkom">
+                    <input type="text" id="add-nama" class="form-control"
+                           placeholder="Contoh: Project Alpha - PT Telkom">
                 </div>
                 <div class="row g-3">
                     <div class="col-4">
@@ -143,14 +140,91 @@
     </div>
 </div>
 
+
+<!-- ============================================================
+     MODAL: Konfirmasi Hapus (satu project / semua)
+     ============================================================ -->
+<div class="modal fade" id="modalKonfirmHapus" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+        <div class="modal-content" style="border-radius:16px;border:none;overflow:hidden">
+
+            <!-- Strip merah di atas -->
+            <div style="height:4px;background:linear-gradient(90deg,var(--ioh-red),var(--ioh-magenta))"></div>
+
+            <div class="modal-body p-4">
+                <!-- Ikon -->
+                <div class="text-center mb-3">
+                    <div style="width:56px;height:56px;border-radius:50%;
+                                background:#FFF0F3;display:inline-flex;
+                                align-items:center;justify-content:center">
+                        <i class="bi bi-trash3-fill" style="font-size:24px;color:var(--ioh-red)"></i>
+                    </div>
+                </div>
+
+                <!-- Judul & pesan -->
+                <h6 class="text-center fw-bold mb-2" style="color:var(--ioh-black);font-size:16px"
+                    id="hapus-modal-title">Hapus Project?</h6>
+                <p class="text-center mb-4" style="font-size:13.5px;color:var(--ioh-gray-mid);line-height:1.5"
+                   id="hapus-modal-body">Apakah Anda yakin ingin menghapus project ini?</p>
+
+                <!-- Tombol aksi -->
+                <div class="d-flex gap-2">
+                    <button class="btn-outline-custom w-100 justify-content-center py-2"
+                            data-bs-dismiss="modal" style="flex:1">
+                        <i class="bi bi-x"></i> Batal
+                    </button>
+                    <button class="btn-primary-custom w-100 justify-content-center py-2"
+                            id="hapus-modal-confirm"
+                            style="flex:1;background:var(--ioh-red)">
+                        <i class="bi bi-trash3"></i> Ya, Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-let previewData   = [];
-const modalTambah = new bootstrap.Modal(document.getElementById('modalTambah'));
+let previewData    = [];
+let hapusPendingFn = null;   // fungsi yang akan dipanggil setelah user konfirmasi
 
-// ===== LOAD TABEL UTAMA =====
+const modalTambah      = new bootstrap.Modal(document.getElementById('modalTambah'));
+const modalKonfirmHapus = new bootstrap.Modal(document.getElementById('modalKonfirmHapus'));
+
+
+// ============================================================
+// MODAL KONFIRMASI HAPUS — helper terpusat
+// ============================================================
+function tampilKonfirmHapus({ title, body, onConfirm }) {
+    document.getElementById('hapus-modal-title').textContent = title;
+    document.getElementById('hapus-modal-body').textContent  = body;
+
+    // Pasang handler sekali pakai
+    const btnConfirm = document.getElementById('hapus-modal-confirm');
+    const handler    = async () => {
+        btnConfirm.removeEventListener('click', handler);
+        modalKonfirmHapus.hide();
+        await onConfirm();
+    };
+    btnConfirm.addEventListener('click', handler);
+
+    // Pastikan handler lama tidak menumpuk saat modal ditutup tanpa konfirmasi
+    document.getElementById('modalKonfirmHapus')
+        .addEventListener('hidden.bs.modal', () => {
+            btnConfirm.removeEventListener('click', handler);
+        }, { once: true });
+
+    modalKonfirmHapus.show();
+}
+
+
+// ============================================================
+// LOAD TABEL UTAMA
+// ============================================================
 async function loadTable() {
     try {
         const res  = await fetch('/data/list');
@@ -169,16 +243,21 @@ async function loadTable() {
             return;
         }
 
-        let rows = data.map((p, i) => `
+        const rows = data.map((p, i) => `
             <tr id="row-${p.id}">
                 <td class="mono" style="color:#9CA3AF">${i + 1}</td>
-                <td class="fw-semibold editable-cell" ondblclick="editCell(this, ${p.id}, 'nama_project')">${p.nama_project}</td>
-                <td class="mono editable-cell" ondblclick="editCell(this, ${p.id}, 'mrc')">${parseFloat(p.mrc).toLocaleString('id-ID')}</td>
-                <td class="mono editable-cell" ondblclick="editCell(this, ${p.id}, 'sla')">${parseFloat(p.sla).toFixed(2)}</td>
-                <td class="mono editable-cell" ondblclick="editCell(this, ${p.id}, 'durasi')">${parseFloat(p.durasi).toFixed(1)}</td>
+                <td class="fw-semibold editable-cell"
+                    ondblclick="editCell(this, ${p.id}, 'nama_project')">${p.nama_project}</td>
+                <td class="mono editable-cell"
+                    ondblclick="editCell(this, ${p.id}, 'mrc')">${parseFloat(p.mrc).toLocaleString('id-ID')}</td>
+                <td class="mono editable-cell"
+                    ondblclick="editCell(this, ${p.id}, 'sla')">${parseFloat(p.sla).toFixed(2)}</td>
+                <td class="mono editable-cell"
+                    ondblclick="editCell(this, ${p.id}, 'durasi')">${parseFloat(p.durasi).toFixed(1)}</td>
                 <td>
-                    <button onclick="hapusProject(${p.id})"
-                        style="background:none;border:none;color:#DC2626;cursor:pointer;font-size:16px;padding:2px 6px"
+                    <button onclick="konfirmHapusSatu(${p.id}, '${p.nama_project.replace(/'/g, "\\'")}')"
+                        style="background:none;border:none;color:#DC2626;cursor:pointer;
+                               font-size:16px;padding:2px 6px"
                         title="Hapus project">
                         <i class="bi bi-trash3"></i>
                     </button>
@@ -192,12 +271,8 @@ async function loadTable() {
             <table class="table-custom">
                 <thead>
                     <tr>
-                        <th>No</th>
-                        <th>Nama Project</th>
-                        <th>MRC (juta Rp)</th>
-                        <th>SLA (%)</th>
-                        <th>Durasi (thn)</th>
-                        <th>Aksi</th>
+                        <th>No</th><th>Nama Project</th><th>MRC (juta Rp)</th>
+                        <th>SLA (%)</th><th>Durasi (thn)</th><th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -208,11 +283,14 @@ async function loadTable() {
     }
 }
 
-// ===== UPLOAD EXCEL =====
+
+// ============================================================
+// UPLOAD EXCEL
+// ============================================================
 const uploadZone = document.getElementById('upload-zone');
 const fileInput  = document.getElementById('file-input');
 
-uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragover',  e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
 uploadZone.addEventListener('drop', e => {
     e.preventDefault();
@@ -233,7 +311,8 @@ async function processFile(file) {
         const json = await res.json();
 
         if (!json.success) {
-            alertEl.innerHTML = `<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> ${json.message}</div>`;
+            alertEl.innerHTML = `<div class="alert-custom alert-error-custom">
+                <i class="bi bi-x-circle-fill"></i> ${json.message}</div>`;
             return;
         }
 
@@ -243,8 +322,10 @@ async function processFile(file) {
 
         if (json.errors?.length > 0) {
             document.getElementById('preview-errors').innerHTML =
-                `<div class="alert-custom alert-warn-custom"><i class="bi bi-exclamation-triangle-fill"></i>
-                <div><strong>${json.errors.length} baris dilewati:</strong> ${json.errors.join(' | ')}</div></div>`;
+                `<div class="alert-custom alert-warn-custom">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <div><strong>${json.errors.length} baris dilewati:</strong>
+                    ${json.errors.join(' | ')}</div></div>`;
         }
     } catch(e) {
         alertEl.innerHTML = '<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> Gagal membaca file.</div>';
@@ -253,10 +334,9 @@ async function processFile(file) {
 
 function renderPreview() {
     document.getElementById('preview-area').style.display = 'block';
-    document.getElementById('preview-count').textContent = `(${previewData.length} baris)`;
+    document.getElementById('preview-count').textContent  = `(${previewData.length} baris)`;
 
-    const tbody = document.getElementById('preview-tbody');
-    tbody.innerHTML = previewData.map((p, i) => `
+    document.getElementById('preview-tbody').innerHTML = previewData.map((p, i) => `
         <tr>
             <td>${i + 1}</td>
             <td contenteditable="true" oninput="previewData[${i}].nama_project=this.textContent"
@@ -276,23 +356,20 @@ function renderPreview() {
         </tr>`).join('');
 }
 
-function hapusPreviewRow(i) {
-    previewData.splice(i, 1);
-    renderPreview();
-}
+function hapusPreviewRow(i) { previewData.splice(i, 1); renderPreview(); }
 
 function resetUpload() {
     previewData = [];
-    document.getElementById('preview-area').style.display = 'none';
-    document.getElementById('preview-errors').innerHTML = '';
-    document.getElementById('upload-alert').innerHTML = '';
+    document.getElementById('preview-area').style.display  = 'none';
+    document.getElementById('preview-errors').innerHTML    = '';
+    document.getElementById('upload-alert').innerHTML      = '';
     fileInput.value = '';
 }
 
 async function simpanData(mode) {
     const btn = document.getElementById(mode === 'tambah' ? 'btn-simpan-tambah' : 'btn-simpan-ganti');
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner-custom me-2"></div> Menyimpan...';
+    btn.disabled    = true;
+    btn.innerHTML   = '<div class="spinner-custom me-2"></div> Menyimpan...';
 
     try {
         const res  = await fetch('/data/simpan', {
@@ -304,29 +381,37 @@ async function simpanData(mode) {
 
         if (json.success) {
             document.getElementById('upload-alert').innerHTML =
-                `<div class="alert-custom alert-success-custom"><i class="bi bi-check-circle-fill"></i> ${json.message}</div>`;
+                `<div class="alert-custom alert-success-custom">
+                    <i class="bi bi-check-circle-fill"></i> ${json.message}</div>`;
             resetUpload();
             loadTable();
         } else {
             document.getElementById('upload-alert').innerHTML =
-                `<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> ${json.message}</div>`;
+                `<div class="alert-custom alert-error-custom">
+                    <i class="bi bi-x-circle-fill"></i> ${json.message}</div>`;
         }
     } catch(e) {
         document.getElementById('upload-alert').innerHTML =
             '<div class="alert-custom alert-error-custom"><i class="bi bi-x-circle-fill"></i> Gagal menyimpan.</div>';
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = mode === 'tambah' ?
-            '<i class="bi bi-plus-circle"></i> Tambahkan ke Data' :
-            '<i class="bi bi-arrow-repeat"></i> Ganti Semua Data';
+        btn.disabled  = false;
+        btn.innerHTML = mode === 'tambah'
+            ? '<i class="bi bi-plus-circle"></i> Tambahkan ke Data'
+            : '<i class="bi bi-arrow-repeat"></i> Ganti Semua Data';
     }
 }
 
-// ===== INLINE EDIT =====
+
+// ============================================================
+// INLINE EDIT
+// ============================================================
 function editCell(td, id, field) {
     if (td.querySelector('input')) return;
     const original = td.textContent.trim();
-    td.innerHTML = `<input class="inline-input" value="${original}" onblur="saveCell(this, ${id}, '${field}', '${original}')" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${original}';this.blur();}">`;
+    td.innerHTML = `<input class="inline-input" value="${original}"
+        onblur="saveCell(this, ${id}, '${field}', '${original}')"
+        onkeydown="if(event.key==='Enter')this.blur();
+                   if(event.key==='Escape'){this.value='${original}';this.blur();}">`;
     td.querySelector('input').focus();
 }
 
@@ -334,10 +419,9 @@ async function saveCell(input, id, field, original) {
     const val = input.value.trim();
     const td  = input.parentElement;
     td.textContent = val;
-
     if (val === original) return;
 
-    const row = document.getElementById(`row-${id}`);
+    const row   = document.getElementById(`row-${id}`);
     const cells = row.querySelectorAll('td');
     const payload = {
         nama_project: cells[1].textContent.trim(),
@@ -356,35 +440,53 @@ async function saveCell(input, id, field, original) {
         const json = await res.json();
         if (!json.success) { td.textContent = original; showToast('Gagal update: ' + json.message, 'error'); }
         else showToast('Data berhasil diupdate', 'success');
-    } catch(e) {
-        td.textContent = original;
-    }
+    } catch(e) { td.textContent = original; }
 }
 
-// ===== HAPUS =====
-async function hapusProject(id) {
-    if (!confirm('Hapus project ini?')) return;
-    const res  = await fetch(`/data/hapus/${id}`, { method: 'DELETE' });
-    const json = await res.json();
-    if (json.success) { loadTable(); showToast('Project dihapus', 'success'); }
-    else showToast('Gagal menghapus', 'error');
+
+// ============================================================
+// HAPUS — menggunakan modal konfirmasi custom
+// ============================================================
+
+// Hapus satu project
+function konfirmHapusSatu(id, nama) {
+    tampilKonfirmHapus({
+        title    : 'Hapus Project?',
+        body     : `Project "${nama}" akan dihapus secara permanen dan tidak bisa dikembalikan.`,
+        onConfirm: async () => {
+            const res  = await fetch(`/data/hapus/${id}`, { method: 'DELETE' });
+            const json = await res.json();
+            if (json.success) { loadTable(); showToast('Project berhasil dihapus', 'success'); }
+            else showToast('Gagal menghapus project', 'error');
+        }
+    });
 }
 
-async function hapusSemua() {
-    if (!confirm('Hapus SEMUA data project? Tindakan ini tidak bisa dibatalkan.')) return;
-    const res  = await fetch('/data/hapus-semua', { method: 'DELETE' });
-    const json = await res.json();
-    if (json.success) { loadTable(); showToast('Semua data dihapus', 'success'); }
+// Hapus semua project
+function konfirmHapusSemua() {
+    tampilKonfirmHapus({
+        title    : 'Hapus Semua Data?',
+        body     : 'Seluruh data project akan dihapus secara permanen. Tindakan ini tidak bisa dibatalkan.',
+        onConfirm: async () => {
+            const res  = await fetch('/data/hapus-semua', { method: 'DELETE' });
+            const json = await res.json();
+            if (json.success) { loadTable(); showToast('Semua data berhasil dihapus', 'success'); }
+            else showToast('Gagal menghapus semua data', 'error');
+        }
+    });
 }
 
-// ===== TAMBAH MANUAL =====
+
+// ============================================================
+// TAMBAH MANUAL
+// ============================================================
 function showTambahModal() { modalTambah.show(); }
 
 async function tambahManual() {
-    const nama   = document.getElementById('add-nama').value.trim();
-    const mrc    = parseFloat(document.getElementById('add-mrc').value);
-    const sla    = parseFloat(document.getElementById('add-sla').value);
-    const durasi = parseFloat(document.getElementById('add-durasi').value);
+    const nama    = document.getElementById('add-nama').value.trim();
+    const mrc     = parseFloat(document.getElementById('add-mrc').value);
+    const sla     = parseFloat(document.getElementById('add-sla').value);
+    const durasi  = parseFloat(document.getElementById('add-durasi').value);
     const alertEl = document.getElementById('modal-alert');
 
     if (!nama || isNaN(mrc) || isNaN(sla) || isNaN(durasi)) {
