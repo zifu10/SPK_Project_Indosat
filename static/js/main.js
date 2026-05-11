@@ -30,7 +30,7 @@ function showToast(msg, type = 'success') {
     t.innerHTML = `<i class="bi bi-${c.icon}"></i>${msg}`;
     document.body.appendChild(t);
     setTimeout(() => {
-        t.style.opacity = '0';
+        t.style.opacity    = '0';
         t.style.transition = 'opacity .3s';
         setTimeout(() => t.remove(), 300);
     }, 3000);
@@ -42,12 +42,4 @@ function showToast(msg, type = 'success') {
  */
 function formatMRC(val) {
     return 'Rp ' + parseFloat(val).toLocaleString('id-ID') + ' jt';
-}
-
-/**
- * Konfirmasi hapus dengan dialog sederhana
- * @param {string} msg
- */
-function konfirmHapus(msg = 'Yakin ingin menghapus data ini?') {
-    return confirm(msg);
 }

@@ -107,6 +107,7 @@ def dashboard_stats():
             LIMIT 1
         )
         ORDER BY pm.probabilitas DESC
+        LIMIT 10
     """, fetch=True) or []
 
     # Konversi Decimal → float/str agar JSON-serializable
@@ -131,7 +132,26 @@ def dashboard_stats():
     """, fetch=True) or []
 
     waktu_ml = str(sesi_info[0]['created_at']) if sesi_info else None
+    
+    # Ambil 5 project terbaru berdasarkan waktu input
+    recent_projects = execute_query("""
+        SELECT id, nama_project, mrc, sla, durasi
+        FROM projects
+        ORDER BY created_at DESC
+        LIMIT 10
+    """, fetch=True) or []
 
+    recent_projects_clean = [
+        {
+            'id'          : int(r['id']),
+            'nama_project': str(r['nama_project']),
+            'mrc'         : float(r['mrc']),
+            'sla'         : float(r['sla']),
+            'durasi'      : float(r['durasi']),
+        }
+        for r in recent_projects
+    ]
+    
     return jsonify({
         'success'      : True,
         'ada_data'     : ada_spk or ada_ml,
@@ -141,6 +161,7 @@ def dashboard_stats():
         'label_layak'  : label_layak,
         'preview_ml'   : preview_ml_clean,
         'waktu_ml'     : waktu_ml,
+        'recent_projects': recent_projects_clean,
     })
 
 

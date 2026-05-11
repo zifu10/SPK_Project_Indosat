@@ -26,14 +26,7 @@ def get_connection():
 def execute_query(query, params=None, fetch=False):
     """
     Helper untuk menjalankan query.
-    
-    Args:
-        query  : SQL query string
-        params : tuple/list parameter untuk prepared statement
-        fetch  : True jika ingin mengambil hasil (SELECT)
-    
-    Returns:
-        List of dict jika fetch=True, lastrowid jika INSERT, None jika error
+    Returns list of dict jika fetch=True, lastrowid jika INSERT, None jika error.
     """
     conn = get_connection()
     if not conn:
@@ -44,11 +37,10 @@ def execute_query(query, params=None, fetch=False):
         cursor.execute(query, params or ())
 
         if fetch:
-            result = cursor.fetchall()
-            return result
-        else:
-            conn.commit()
-            return cursor.lastrowid
+            return cursor.fetchall()
+
+        conn.commit()
+        return cursor.lastrowid
 
     except Error as e:
         print(f"[DB ERROR] Query gagal: {e}")
@@ -65,13 +57,7 @@ def execute_query(query, params=None, fetch=False):
 def execute_many(query, params_list):
     """
     Helper untuk bulk insert (executemany).
-    
-    Args:
-        query       : SQL INSERT query
-        params_list : list of tuples
-    
-    Returns:
-        True jika berhasil, False jika gagal
+    Returns True jika berhasil, False jika gagal.
     """
     conn = get_connection()
     if not conn:
@@ -94,93 +80,53 @@ def execute_many(query, params_list):
 
 
 # ============================================================
-# Helper: Ambil semua project dari database
+# Project helpers
 # ============================================================
+
 def get_all_projects():
-    query = "SELECT * FROM projects ORDER BY id ASC"
-    return execute_query(query, fetch=True) or []
-
-
-def get_project_by_id(project_id):
-    query = "SELECT * FROM projects WHERE id = %s"
-    result = execute_query(query, (project_id,), fetch=True)
-    return result[0] if result else None
+    return execute_query("SELECT * FROM projects ORDER BY id ASC", fetch=True) or []
 
 
 def insert_projects_bulk(projects: list):
-    """
-    Bulk insert project dari hasil upload Excel.
-    projects: list of dict dengan key nama_project, mrc, sla, durasi
-    """
-    query = """
-        INSERT INTO projects (nama_project, mrc, sla, durasi)
-        VALUES (%s, %s, %s, %s)
-    """
-    params = [(p['nama_project'], p['mrc'], p['sla'], p['durasi']) for p in projects]
-    return execute_many(query, params)
+    return execute_many(
+        "INSERT INTO projects (nama_project, mrc, sla, durasi) VALUES (%s, %s, %s, %s)",
+        [(p['nama_project'], p['mrc'], p['sla'], p['durasi']) for p in projects]
+    )
 
 
 def update_project(project_id, nama, mrc, sla, durasi):
-    query = """
-        UPDATE projects
-        SET nama_project = %s, mrc = %s, sla = %s, durasi = %s
-        WHERE id = %s
-    """
-    return execute_query(query, (nama, mrc, sla, durasi, project_id))
+    return execute_query(
+        "UPDATE projects SET nama_project=%s, mrc=%s, sla=%s, durasi=%s WHERE id=%s",
+        (nama, mrc, sla, durasi, project_id)
+    )
 
 
 def delete_project(project_id):
-    query = "DELETE FROM projects WHERE id = %s"
-    return execute_query(query, (project_id,))
+    return execute_query("DELETE FROM projects WHERE id = %s", (project_id,))
 
 
 def clear_all_projects():
-    query = "DELETE FROM projects"
-    return execute_query(query)
+    return execute_query("DELETE FROM projects")
 
 
 # ============================================================
-# Helper: Simpan hasil perhitungan SPK
+# SPK helpers
 # ============================================================
+
 def save_hasil(sesi_id, metode, hasil_list):
-    """
-    Simpan hasil ranking ke tabel hasil_perhitungan.
-    hasil_list: list of dict {project_id, skor, ranking}
-    """
-    query = """
-        INSERT INTO hasil_perhitungan (sesi_id, metode, project_id, skor, ranking)
-        VALUES (%s, %s, %s, %s, %s)
-    """
-    params = [
-        (sesi_id, metode, h['project_id'], h['skor'], h['ranking'])
-        for h in hasil_list
-    ]
-    return execute_many(query, params)
-
-
-def save_prediksi_ml(sesi_id, prediksi_list):
-    """
-    Simpan hasil prediksi ML.
-    prediksi_list: list of dict {project_id, prediksi, probabilitas}
-    """
-    query = """
-        INSERT INTO prediksi_ml (sesi_id, project_id, prediksi, probabilitas)
-        VALUES (%s, %s, %s, %s)
-    """
-    params = [
-        (sesi_id, p['project_id'], p['prediksi'], p['probabilitas'])
-        for p in prediksi_list
-    ]
-    return execute_many(query, params)
+    """Simpan hasil ranking ke tabel hasil_perhitungan."""
+    return execute_many(
+        "INSERT INTO hasil_perhitungan (sesi_id, metode, project_id, skor, ranking) VALUES (%s, %s, %s, %s, %s)",
+        [(sesi_id, metode, h['project_id'], h['skor'], h['ranking']) for h in hasil_list]
+    )
 
 
 def get_hasil_by_sesi(sesi_id, metode):
-    """Ambil hasil perhitungan berdasarkan sesi_id dan metode."""
-    query = """
-        SELECT h.*, p.nama_project, p.mrc, p.sla, p.durasi
-        FROM hasil_perhitungan h
-        JOIN projects p ON h.project_id = p.id
-        WHERE h.sesi_id = %s AND h.metode = %s
-        ORDER BY h.ranking ASC
-    """
-    return execute_query(query, (sesi_id, metode), fetch=True) or []
+    return execute_query(
+        """SELECT h.*, p.nama_project, p.mrc, p.sla, p.durasi
+           FROM hasil_perhitungan h
+           JOIN projects p ON h.project_id = p.id
+           WHERE h.sesi_id = %s AND h.metode = %s
+           ORDER BY h.ranking ASC""",
+        (sesi_id, metode), fetch=True
+    ) or []

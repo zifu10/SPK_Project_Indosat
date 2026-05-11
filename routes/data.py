@@ -5,8 +5,8 @@
 import pandas as pd
 from flask import Blueprint, render_template, request, jsonify
 from utils.db import (
-    get_all_projects,insert_projects_bulk, update_project,
-    delete_project, clear_all_projects, execute_query
+    get_all_projects, insert_projects_bulk,
+    update_project, delete_project, clear_all_projects
 )
 
 data_bp = Blueprint('data', __name__)
@@ -45,11 +45,8 @@ def upload_excel():
 
     try:
         df = pd.read_excel(file)
-
-        # Normalisasi nama kolom (case-insensitive, strip spasi)
         df.columns = [str(c).strip().lower() for c in df.columns]
 
-        # Mapping nama kolom yang mungkin dipakai user
         col_map = {
             'nama_project': ['nama_project', 'nama project', 'project', 'nama'],
             'mrc':          ['mrc', 'monthly recurring charge', 'monthly_recurring_charge'],
@@ -76,12 +73,11 @@ def upload_excel():
                            f'Pastikan Excel memiliki kolom: Nama_Project, MRC, SLA, Durasi'
             }), 400
 
-        # Validasi dan konversi tipe data
         errors  = []
         preview = []
 
         for idx, row in df.iterrows():
-            row_num = idx + 2  # +2 karena header di baris 1
+            row_num = idx + 2
 
             try:
                 nama   = str(row['nama_project']).strip()
@@ -92,7 +88,6 @@ def upload_excel():
                 errors.append(f'Baris {row_num}: nilai tidak valid (harus angka)')
                 continue
 
-            # Validasi range
             row_errors = []
             if not nama:
                 row_errors.append('nama project kosong')
@@ -121,10 +116,10 @@ def upload_excel():
             }), 400
 
         return jsonify({
-            'success':  True,
-            'message':  f'{len(preview)} data berhasil dibaca.',
-            'preview':  preview,
-            'errors':   errors,   # baris yang bermasalah (jika ada)
+            'success': True,
+            'message': f'{len(preview)} data berhasil dibaca.',
+            'preview': preview,
+            'errors':  errors,
         })
 
     except Exception as e:
@@ -136,9 +131,6 @@ def upload_excel():
 # ------------------------------------------------------------
 @data_bp.route('/simpan', methods=['POST'])
 def simpan_data():
-    """
-    Menerima data JSON (hasil edit preview), simpan ke database.
-    """
     data = request.get_json()
 
     if not data or 'projects' not in data:
@@ -149,7 +141,6 @@ def simpan_data():
     if not projects:
         return jsonify({'success': False, 'message': 'Data project kosong'}), 400
 
-    # Validasi ulang sebelum insert
     for p in projects:
         try:
             float(p['mrc'])
@@ -158,20 +149,14 @@ def simpan_data():
         except (ValueError, KeyError):
             return jsonify({'success': False, 'message': 'Format data tidak valid'}), 400
 
-    mode = data.get('mode', 'tambah')  # 'tambah' atau 'ganti'
+    mode = data.get('mode', 'tambah')
 
     if mode == 'ganti':
         clear_all_projects()
 
-    success = insert_projects_bulk(projects)
-
-    if success:
-        return jsonify({
-            'success': True,
-            'message': f'{len(projects)} project berhasil disimpan.'
-        })
-    else:
-        return jsonify({'success': False, 'message': 'Gagal menyimpan ke database'}), 500
+    if insert_projects_bulk(projects):
+        return jsonify({'success': True, 'message': f'{len(projects)} project berhasil disimpan.'})
+    return jsonify({'success': False, 'message': 'Gagal menyimpan ke database'}), 500
 
 
 # ------------------------------------------------------------
@@ -189,7 +174,6 @@ def update(project_id):
     except (ValueError, KeyError) as e:
         return jsonify({'success': False, 'message': f'Data tidak valid: {e}'}), 400
 
-    # Validasi
     if not nama:
         return jsonify({'success': False, 'message': 'Nama project tidak boleh kosong'}), 400
     if mrc <= 0:
@@ -199,12 +183,9 @@ def update(project_id):
     if durasi <= 0:
         return jsonify({'success': False, 'message': 'Durasi harus lebih dari 0'}), 400
 
-    result = update_project(project_id, nama, mrc, sla, durasi)
-
-    if result is not None:
+    if update_project(project_id, nama, mrc, sla, durasi) is not None:
         return jsonify({'success': True, 'message': 'Project berhasil diupdate'})
-    else:
-        return jsonify({'success': False, 'message': 'Gagal mengupdate project'}), 500
+    return jsonify({'success': False, 'message': 'Gagal mengupdate project'}), 500
 
 
 # ------------------------------------------------------------
@@ -212,12 +193,9 @@ def update(project_id):
 # ------------------------------------------------------------
 @data_bp.route('/hapus/<int:project_id>', methods=['DELETE'])
 def hapus(project_id):
-    result = delete_project(project_id)
-
-    if result is not None:
+    if delete_project(project_id) is not None:
         return jsonify({'success': True, 'message': 'Project berhasil dihapus'})
-    else:
-        return jsonify({'success': False, 'message': 'Gagal menghapus project'}), 500
+    return jsonify({'success': False, 'message': 'Gagal menghapus project'}), 500
 
 
 # ------------------------------------------------------------
@@ -225,12 +203,9 @@ def hapus(project_id):
 # ------------------------------------------------------------
 @data_bp.route('/hapus-semua', methods=['DELETE'])
 def hapus_semua():
-    result = clear_all_projects()
-
-    if result is not None:
+    if clear_all_projects() is not None:
         return jsonify({'success': True, 'message': 'Semua project berhasil dihapus'})
-    else:
-        return jsonify({'success': False, 'message': 'Gagal menghapus semua project'}), 500
+    return jsonify({'success': False, 'message': 'Gagal menghapus semua project'}), 500
 
 
 # ------------------------------------------------------------
@@ -251,17 +226,9 @@ def tambah():
     if not nama:
         return jsonify({'success': False, 'message': 'Nama project tidak boleh kosong'}), 400
 
-    result = insert_projects_bulk([{
-        'nama_project': nama,
-        'mrc':          mrc,
-        'sla':          sla,
-        'durasi':       durasi
-    }])
-
-    if result:
+    if insert_projects_bulk([{'nama_project': nama, 'mrc': mrc, 'sla': sla, 'durasi': durasi}]):
         return jsonify({'success': True, 'message': 'Project berhasil ditambahkan'})
-    else:
-        return jsonify({'success': False, 'message': 'Gagal menambahkan project'}), 500
+    return jsonify({'success': False, 'message': 'Gagal menambahkan project'}), 500
 
 
 # ------------------------------------------------------------
@@ -270,15 +237,18 @@ def tambah():
 @data_bp.route('/list', methods=['GET'])
 def list_projects():
     projects = get_all_projects()
-    cleaned = []
-    for p in projects:
-        cleaned.append({
-            'id':           int(p['id']),
-            'nama_project': str(p['nama_project']),
-            'mrc':          float(p['mrc']),
-            'sla':          float(p['sla']),
-            'durasi':       float(p['durasi']),
-            'created_at':   str(p['created_at']) if p.get('created_at') else '',
-            'updated_at':   str(p['updated_at']) if p.get('updated_at') else '',
-        })
-    return jsonify({'success': True, 'data': cleaned})
+    return jsonify({
+        'success': True,
+        'data': [
+            {
+                'id':           int(p['id']),
+                'nama_project': str(p['nama_project']),
+                'mrc':          float(p['mrc']),
+                'sla':          float(p['sla']),
+                'durasi':       float(p['durasi']),
+                'created_at':   str(p['created_at']) if p.get('created_at') else '',
+                'updated_at':   str(p['updated_at']) if p.get('updated_at') else '',
+            }
+            for p in projects
+        ]
+    })

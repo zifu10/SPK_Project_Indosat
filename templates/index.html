@@ -3,18 +3,6 @@
 {% block title %}Dashboard{% endblock %}
 {% block page_title %}<span>Dashboard</span> — Overview Sistem{% endblock %}
 
-{% block extra_css %}
-<style>
-.dash-bar-wrap  { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-.dash-bar-label { font-size:12.5px; color:var(--ioh-gray-dark); width:180px;
-                  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
-.dash-bar-track { flex:1; height:11px; background:#F0F2F8; border-radius:10px; overflow:hidden; }
-.dash-bar-fill  { height:100%; border-radius:10px; transition:width .6s ease; }
-.dash-bar-score { font-size:12px; font-family:'DM Mono',monospace; font-weight:700;
-                  width:46px; text-align:right; flex-shrink:0; }
-</style>
-{% endblock %}
-
 {% block content %}
 
 <!-- Stat Cards -->
@@ -134,11 +122,11 @@
     </div>
 </div>
 
-<!-- Top 5 Rekomendasi ML -->
+<!-- Top 10 Rekomendasi ML -->
 <div class="card mb-4">
     <div class="card-header-custom mb-3">
         <div class="card-title-custom">
-            <i class="bi bi-bar-chart-fill"></i> Top 5 Rekomendasi ML
+            <i class="bi bi-bar-chart-fill"></i> Top 10 Rekomendasi ML
             <span id="ml-waktu" style="font-size:11px;font-weight:400;color:#9CA3AF;margin-left:8px"></span>
         </div>
         <a href="{{ url_for('ml.index') }}"
@@ -192,21 +180,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('stat-total').textContent = '–';
     }
 
-    // Render tabel dulu tanpa menunggu dashboard-stats
-    renderProjectTable(projects);
-
     // ── 2. Dashboard stats + preview ML ───────────────────
     try {
         const res = await fetch('/dashboard-stats');
 
-        // Pastikan response OK sebelum parse JSON
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const json = await res.json();
 
-        // Stat card Layak
         const elVal   = document.getElementById('stat-layak');
         const elLabel = document.getElementById('stat-layak-label');
+
         if (!json.ada_data || json.jumlah_layak === null) {
             elVal.textContent   = '–';
             elLabel.textContent = 'Belum dihitung';
@@ -216,22 +200,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         renderMLPreview(json.preview_ml || [], json.waktu_ml);
+        renderProjectTable(json.recent_projects || []);   // ← pindah ke sini
 
     } catch(e) {
-        // Gagal fetch dashboard-stats — tetap tampilkan UI normal
         document.getElementById('stat-layak').textContent       = '–';
         document.getElementById('stat-layak-label').textContent = 'Belum dihitung';
         renderMLPreview([], null);
+        renderProjectTable([]);   // ← tambahkan fallback di sini juga
         console.error('dashboard-stats error:', e);
     }
 });
 
 
-// ── Render top 5 preview ML ───────────────────────────────
 function renderMLPreview(data, waktuMl) {
     const cont = document.getElementById('ml-preview-container');
 
-    // Timestamp di header
     if (waktuMl) {
         const dt  = new Date(waktuMl);
         const tgl = isNaN(dt) ? waktuMl : dt.toLocaleString('id-ID', {
@@ -246,9 +229,7 @@ function renderMLPreview(data, waktuMl) {
         cont.innerHTML = `
             <div class="text-center py-4 text-muted">
                 <i class="bi bi-cpu" style="font-size:36px;opacity:.2"></i>
-                <p class="mt-2 mb-3" style="font-size:13px">
-                    Belum ada hasil prediksi ML.
-                </p>
+                <p class="mt-2 mb-3" style="font-size:13px">Belum ada hasil prediksi ML.</p>
                 <a href="/ml" class="btn-primary-custom text-decoration-none"
                    style="font-size:12px;padding:7px 16px">
                     <i class="bi bi-play-fill"></i> Jalankan Sekarang
@@ -257,37 +238,22 @@ function renderMLPreview(data, waktuMl) {
         return;
     }
 
-    // Ambil top 5 saja
-    const top5 = data.slice(0, 5);
-
-    // Legend
     const legend = `
         <div class="d-flex gap-4 mb-3" style="font-size:11px;color:#6B7280">
-            <span>
-                <span style="display:inline-block;width:10px;height:10px;
-                    background:#00A651;border-radius:2px;margin-right:4px"></span>
-                ≥75% Sangat Layak
-            </span>
-            <span>
-                <span style="display:inline-block;width:10px;height:10px;
-                    background:#00B5E2;border-radius:2px;margin-right:4px"></span>
-                50–74% Layak
-            </span>
-            <span>
-                <span style="display:inline-block;width:10px;height:10px;
-                    background:#E4002B;border-radius:2px;margin-right:4px"></span>
-                &lt;50% Tidak Layak
-            </span>
+            <span><span style="display:inline-block;width:10px;height:10px;
+                background:#00A651;border-radius:2px;margin-right:4px"></span>≥75% Sangat Layak</span>
+            <span><span style="display:inline-block;width:10px;height:10px;
+                background:#00B5E2;border-radius:2px;margin-right:4px"></span>50–74% Layak</span>
+            <span><span style="display:inline-block;width:10px;height:10px;
+                background:#E4002B;border-radius:2px;margin-right:4px"></span>&lt;50% Tidak Layak</span>
         </div>`;
 
-    const bars = top5.map((p, i) => {
+    const bars = data.slice(0, 10).map((p, i) => {
         const skor     = p.skor_borda;
         const barColor = skor >= 75 ? '#00A651' : skor >= 50 ? '#00B5E2' : '#E4002B';
         const nama     = p.nama_project.length > 26
-            ? p.nama_project.substring(0, 26) + '…'
-            : p.nama_project;
+            ? p.nama_project.substring(0, 26) + '…' : p.nama_project;
 
-        // Badge kategori mini
         let badge;
         if (skor >= 75)      badge = '<span style="font-size:10px;background:#E5F7EE;color:#006B35;padding:1px 7px;border-radius:10px;font-weight:600;margin-left:6px">Sangat Layak</span>';
         else if (skor >= 50) badge = '<span style="font-size:10px;background:#E5F7FD;color:#0077A3;padding:1px 7px;border-radius:10px;font-weight:600;margin-left:6px">Layak</span>';
@@ -310,7 +276,6 @@ function renderMLPreview(data, waktuMl) {
 }
 
 
-// ── Render tabel 5 project terbaru ────────────────────────
 function renderProjectTable(projects) {
     const container = document.getElementById('table-container');
 
@@ -326,9 +291,7 @@ function renderProjectTable(projects) {
         return;
     }
 
-    // Hanya 5 baris
-    const preview = projects.slice(0, 5);
-    const rows = preview.map((p, i) => `
+    const rows = projects.slice(0, 10).map((p, i) => `
         <tr>
             <td>${i + 1}</td>
             <td class="fw-semibold">${p.nama_project}</td>
