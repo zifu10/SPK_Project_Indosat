@@ -2,17 +2,17 @@
 
 **Sistem Pendukung Keputusan — Penentuan Kelayakan Perpanjangan Project**
 
-Aplikasi web berbasis Flask untuk membantu PT Indosat Ooredoo Hutchison dalam menentukan project mana yang layak diperpanjang kontraknya, menggunakan 4 metode MCDM dan Machine Learning.
+Aplikasi web berbasis Flask untuk membantu PT Indosat Ooredoo Hutchison dalam menentukan project mana yang layak diperpanjang kontraknya, menggunakan 4 metode MCDM dan agregasi Machine Learning.
 
 ---
 
 ## ✨ Fitur Utama
 
-- 📤 **Upload data project** via file Excel (.xlsx/.xls) dengan preview sebelum disimpan
+- 📤 **Upload data project** via file Excel (.xlsx/.xls) dengan preview dan validasi sebelum disimpan
 - ✏️ **Edit data inline** langsung dari tabel tanpa perlu form terpisah
 - 🧮 **4 Metode SPK** — AHP, SAW, MOORA, Weighted Product
-- 🤖 **Prediksi Machine Learning** — Decision Tree Classifier
-- 📊 **Dashboard** dengan ringkasan data dan kriteria bobot
+- 🤖 **Agregasi Machine Learning** — Borda Count Rank Aggregation dari hasil 4 metode SPK
+- 📊 **Dashboard** dengan ringkasan data, kriteria bobot, top 10 rekomendasi ML, dan 10 data project terbaru
 
 ---
 
@@ -20,10 +20,11 @@ Aplikasi web berbasis Flask untuk membantu PT Indosat Ooredoo Hutchison dalam me
 
 | Komponen | Teknologi |
 |---|---|
-| Backend | Python + Flask |
+| Backend | Python + Flask (Blueprint pattern) |
 | Database | MySQL (via XAMPP) |
 | Frontend | HTML + Bootstrap 5 + Vanilla JS |
-| Machine Learning | scikit-learn (Decision Tree) |
+| Machine Learning | Borda Count Rank Aggregation |
+| Visualisasi | Chart.js |
 | Excel Parsing | pandas + openpyxl |
 
 ---
@@ -57,7 +58,7 @@ Buka file `config.py` dan sesuaikan:
 ```python
 DB_HOST     = 'localhost'
 DB_USER     = 'root'
-DB_PASSWORD = ''        # isi jika MySQL kamu menggunakan password
+DB_PASSWORD = ''        # isi jika MySQL menggunakan password
 DB_NAME     = 'spk_indosat'
 ```
 
@@ -75,26 +76,26 @@ Buka browser: **http://localhost:5000**
 SPK_Project_Indosat/
 │
 ├── app.py                  ← Entry point, register semua blueprint
-├── config.py               ← Konfigurasi DB, bobot kriteria (FIXED)
+├── config.py               ← Konfigurasi DB + kalkulasi bobot AHP (FIXED)
 ├── requirements.txt        ← Daftar library Python
 │
 ├── database/
 │   └── schema.sql          ← Script DDL tabel + 10 data dummy
 │
 ├── routes/                 ← Flask Blueprint (URL handler)
-│   ├── main.py             ← Route dashboard (/)
+│   ├── main.py             ← Route dashboard (/) + endpoint /dashboard-stats
 │   ├── data.py             ← CRUD project + upload Excel (/data)
 │   ├── spk.py              ← Perhitungan 4 metode SPK (/spk)
-│   └── ml.py               ← Prediksi Machine Learning (/ml)
+│   └── ml.py               ← Agregasi Borda Count (/ml)
 │
 ├── utils/                  ← Modul helper
 │   ├── db.py               ← Koneksi MySQL + query helper
 │   ├── algorithms.py       ← Implementasi AHP, SAW, MOORA, WP
-│   └── ml_model.py         ← Decision Tree training + prediksi
+│   └── ml_model.py         ← Borda Count Rank Aggregation
 │
 ├── static/
 │   ├── css/style.css       ← Semua styling (Indosat color palette)
-│   ├── js/main.js          ← Utility JS global (toast, format)
+│   ├── js/main.js          ← Utility JS global (showToast, formatMRC)
 │   └── img/logo_indosat.png
 │
 └── templates/              ← Jinja2 HTML templates
@@ -102,7 +103,7 @@ SPK_Project_Indosat/
     ├── index.html          ← Dashboard
     ├── data_project.html   ← Manajemen data project
     ├── perhitungan.html    ← Perhitungan & hasil SPK
-    └── prediksi_ml.html    ← Prediksi Machine Learning
+    └── prediksi_ml.html    ← Agregasi ML & rekomendasi final
 ```
 
 ---
@@ -117,7 +118,7 @@ Bobot dihitung menggunakan metode AHP dengan **CR = 0.0532** (konsisten, CR < 0.
 | SLA | SLA Availability | Cost | **0.106** |
 | Durasi | Contract Duration | Benefit | **0.260** |
 
-> ⚠️ Bobot bersifat **FIXED** dan tidak dapat diubah melalui antarmuka. Untuk mengubah bobot, edit langsung di `config.py`.
+> ⚠️ Bobot bersifat **FIXED** dan tidak dapat diubah melalui antarmuka. Untuk mengubah bobot, edit matriks perbandingan di fungsi `_hitung_bobot_ahp()` dalam `config.py`.
 
 ---
 
@@ -125,20 +126,28 @@ Bobot dihitung menggunakan metode AHP dengan **CR = 0.0532** (konsisten, CR < 0.
 
 | Metode | Kepanjangan | Cara Kerja |
 |---|---|---|
-| **AHP** | Analytical Hierarchy Process | Skor sub-kriteria × bobot, skala ordinal |
-| **SAW** | Simple Additive Weighting | Normalisasi benefit/cost, weighted sum |
-| **MOORA** | Multi-Objective Optimization on Basis of Ratio Analysis | Normalisasi rasio akar kuadrat, Yi = benefit − cost |
-| **WP** | Weighted Product | Si = Π(xij^wj), cost pakai pangkat negatif |
+| **AHP** | Analytical Hierarchy Process | Nilai dikategorikan (rendah/sedang/tinggi), lalu skor sub-kriteria × bobot |
+| **SAW** | Simple Additive Weighting | Normalisasi benefit (xij/max) dan cost (min/xij), weighted sum |
+| **MOORA** | Multi-Objective Optimization on Basis of Ratio Analysis | Normalisasi rasio akar kuadrat, Yi = Σbenefit − Σcost |
+| **WP** | Weighted Product | Si = Π(xij^wj), cost pakai pangkat negatif; Vi = Si/ΣSi |
+
+Semua 4 metode dapat dijalankan sekaligus untuk perbandingan ranking, atau satu per satu untuk melihat detail normalisasi per kriteria.
 
 ---
 
-## 🤖 Machine Learning
+## 🤖 Machine Learning — Borda Count Rank Aggregation
 
-- **Algoritma:** Decision Tree Classifier (scikit-learn)
-- **Fitur input:** MRC, SLA Availability, Contract Duration
-- **Output:** `Layak` / `Tidak Layak` + nilai probabilitas
-- **Labeling:** Otomatis berdasarkan skor SAW — project dengan skor ≥ median diklasifikasikan sebagai *Layak*
-- **Catatan:** Model dilatih ulang setiap kali prediksi dijalankan menggunakan data terkini di database
+Berbeda dari Decision Tree klasik, ML pada sistem ini berfungsi sebagai **agregator** dari hasil keempat metode SPK.
+
+- **Metode:** Borda Count Rank Aggregation
+- **Input:** Ranking dari 4 metode SPK (sesi terbaru di database)
+- **Cara kerja:** Tiap metode memberi poin Borda = N − ranking. Poin dari 4 metode dijumlahkan dan dinormalisasi ke skala 0–100% sebagai skor kelayakan akhir
+- **Output:** Ranking final + skor kelayakan + kategori + konsistensi antar metode
+- **Kategori:** ≥ 75% = Sangat Layak | 50–74% = Layak | < 50% = Tidak Layak
+- **Konsistensi:** Mengukur seberapa sepakat keempat metode untuk tiap project (100% = semua metode sepakat)
+- **Syarat:** Semua 4 metode SPK harus sudah dijalankan terlebih dahulu
+
+> 📌 Angka "Layak" di dashboard dihitung menggunakan sistem voting mayoritas (project dianggap Layak jika ≥ setengah dari metode yang tersedia menyatakan Layak), yang berbeda dari kategorisasi Borda Count di halaman ML. Keduanya adalah pendekatan yang berbeda untuk pertanyaan yang sama.
 
 ---
 
@@ -154,6 +163,19 @@ File Excel harus memiliki kolom berikut (nama kolom tidak case-sensitive):
 | `Durasi` | Contract Duration dalam tahun | 6 |
 
 Download template Excel tersedia langsung di halaman **Data Project**.
+
+---
+
+## 🗄️ Struktur Database
+
+| Tabel | Fungsi |
+|---|---|
+| `projects` | Data project yang dievaluasi |
+| `hasil_perhitungan` | Hasil ranking per metode SPK per sesi |
+| `detail_normalisasi` | Nilai normalisasi tiap kriteria (untuk transparansi) |
+| `prediksi_ml` | Hasil agregasi Borda Count per sesi |
+
+Setiap kali perhitungan atau agregasi dijalankan, hasilnya disimpan dengan `sesi_id` UUID unik sehingga riwayat perhitungan tetap tersimpan.
 
 ---
 

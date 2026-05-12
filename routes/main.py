@@ -11,9 +11,7 @@ main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
 def index():
-    projects = get_all_projects()
-    total    = len(projects)
-    return render_template('index.html', total_project=total)
+    return render_template('index.html')
 
 
 # ------------------------------------------------------------

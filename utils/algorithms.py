@@ -169,9 +169,9 @@ def hitung_wp(projects: list) -> list:
     hasil_s = []
 
     for p in projects:
-        mrc    = float(p['mrc'])    or 0.001
-        sla    = float(p['sla'])    or 0.001
-        durasi = float(p['durasi']) or 0.001
+        mrc    = float(p['mrc'])    if float(p['mrc'])    > 0 else 0.001
+        sla    = float(p['sla'])    if float(p['sla'])    > 0 else 0.001
+        durasi = float(p['durasi']) if float(p['durasi']) > 0 else 0.001
 
         si = (mrc ** w_mrc) * (sla ** -w_sla) * (durasi ** w_durasi)
 
